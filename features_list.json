@@ -1,0 +1,718 @@
+{
+  "app_name": "Luma",
+  "version": "1.0.0",
+  "modules": [
+    {
+      "module_name": "Onboarding",
+      "features": [
+        {
+          "id": "ONB-01",
+          "name": "Splash Screen",
+          "description": "Initial launch screen displaying the Luma brand mark. Handles asset loading and auth state check before routing the user to the appropriate entry point.",
+          "interaction": "Auto-redirects to home if session exists, otherwise to phone auth.",
+          "is_complete": true
+        },
+        {
+          "id": "ONB-02",
+          "name": "Value Prop Carousel",
+          "description": "Multi-slide introduction to Luma's core concepts: circles, pairings, and the conversational agent.",
+          "interaction": "User swipes or taps Next to advance. Skip bypasses to auth. Final slide shows Get Started CTA.",
+          "is_complete": false
+        },
+        {
+          "id": "ONB-03",
+          "name": "Profile Setup — Name & Photo",
+          "description": "First-run screen collecting the user's first name, last name, and profile photo after account creation.",
+          "interaction": "Photo upload opens device image picker. User can skip photo and add later.",
+          "is_complete": true
+        },
+        {
+          "id": "ONB-04",
+          "name": "Profile Setup — Bio & Occupation",
+          "description": "Collects a short bio and occupation to populate the user's profile and inform pairing context.",
+          "interaction": "Free text inputs with character limits. Both fields are optional.",
+          "is_complete": true
+        },
+        {
+          "id": "ONB-05",
+          "name": "Profile Setup — Interests",
+          "description": "Tag-selection screen where the user picks interests (e.g. food, travel, basketball). Used by Luma to highlight shared interests between matched pairs.",
+          "interaction": "Tap to select / deselect tags. Minimum selection not enforced but encouraged.",
+          "is_complete": true
+        },
+        {
+          "id": "ONB-06",
+          "name": "Profile Setup — City",
+          "description": "Prompts the user to set their city so Luma can surface relevant circles and dinners.",
+          "interaction": "Text search with autocomplete. Selection persists to user profile.",
+          "is_complete": true
+        },
+        {
+          "id": "ONB-07",
+          "name": "First Action Prompt",
+          "description": "Post-onboarding screen where Luma agent prompts the user to either join a circle with an invite code or browse circles near them.",
+          "interaction": "Two CTA options: Enter invite code or Browse circles. Luma message sets conversational tone from the start.",
+          "is_complete": false
+        }
+      ]
+    },
+    {
+      "module_name": "Authentication",
+      "features": [
+        {
+          "id": "AUTH-01",
+          "name": "Phone Number Entry",
+          "description": "Primary authentication entry point. Collects the user's mobile number for SMS OTP verification.",
+          "interaction": "Country code selector with flag. Formatted phone input. Submit triggers OTP send.",
+          "is_complete": true
+        },
+        {
+          "id": "AUTH-02",
+          "name": "OTP Verification",
+          "description": "6-digit code verification screen sent via SMS to the user's phone number.",
+          "interaction": "Auto-advances between digit inputs. Resend option with cooldown timer. Auto-submits on last digit.",
+          "is_complete": true
+        },
+        {
+          "id": "AUTH-03",
+          "name": "New vs Returning User Routing",
+          "description": "After OTP verification, system detects whether a user_profiles row exists and routes accordingly — new users go to onboarding, returning users go to home.",
+          "interaction": "Transparent to user. No explicit screen.",
+          "is_complete": true
+        },
+        {
+          "id": "AUTH-04",
+          "name": "Session Persistence",
+          "description": "Auth session is stored locally so returning users bypass auth on relaunch.",
+          "interaction": "Handled at app launch. User is not asked to re-authenticate unless session expires.",
+          "is_complete": true
+        },
+        {
+          "id": "AUTH-05",
+          "name": "Sign Out",
+          "description": "Terminates the current session and returns the user to the phone entry screen.",
+          "interaction": "Accessible from Settings. Confirmation prompt before signing out.",
+          "is_complete": true
+        },
+        {
+          "id": "AUTH-06",
+          "name": "Account Deletion",
+          "description": "Permanently deletes the user's profile and auth record, including all associated data.",
+          "interaction": "Available in Settings. Requires explicit confirmation. Irreversible.",
+          "is_complete": true
+        }
+      ]
+    },
+    {
+      "module_name": "Home",
+      "features": [
+        {
+          "id": "HOME-01",
+          "name": "Luma Agent Feed",
+          "description": "Conversational home screen where the Luma agent surfaces contextual updates — upcoming dinners, pending actions, pairing news, and suggestions. The primary interface for the app.",
+          "interaction": "Scrollable conversation-style feed. User can type or tap quick-reply chips to interact with Luma.",
+          "is_complete": true
+        },
+        {
+          "id": "HOME-02",
+          "name": "Confirmed Dinner Card",
+          "description": "Prominent card on home showing the user's next confirmed dinner — circle name, date, time, and venue. Tapping opens the full dinner detail screen.",
+          "interaction": "Tapping the Details button navigates to the confirmed dinner detail screen.",
+          "is_complete": true
+        },
+        {
+          "id": "HOME-03",
+          "name": "Open Seats Rail",
+          "description": "Horizontal scrollable rail showing dinners in the user's city that still have open seats. Allows spontaneous seat requests outside of a circle.",
+          "interaction": "Swipe horizontally to browse. Tap Request Seat to express interest.",
+          "is_complete": false
+        },
+        {
+          "id": "HOME-04",
+          "name": "Quick Action Grid",
+          "description": "2x2 grid of entry points: Find a Dinner, My Circles, Start a Circle, My Profile.",
+          "interaction": "Each tile navigates to the corresponding section of the app.",
+          "is_complete": true
+        },
+        {
+          "id": "HOME-05",
+          "name": "City Selector",
+          "description": "Dropdown in the top bar allowing the user to switch their active city context, affecting which circles and dinners are surfaced.",
+          "interaction": "Tap city name to open selector. Selection updates feed context immediately.",
+          "is_complete": true
+        },
+        {
+          "id": "HOME-06",
+          "name": "Notification Bell",
+          "description": "Bell icon in the top bar with an unread badge count. Tapping opens the notification tray.",
+          "interaction": "Badge clears as notifications are read. Tapping bell opens notification list.",
+          "is_complete": true
+        },
+        {
+          "id": "HOME-07",
+          "name": "Profile Avatar",
+          "description": "User's profile photo in the top bar. Tapping navigates to their profile.",
+          "interaction": "Falls back to initials if no photo is set.",
+          "is_complete": true
+        }
+      ]
+    },
+    {
+      "module_name": "Circles",
+      "features": [
+        {
+          "id": "CIRC-01",
+          "name": "My Circles List",
+          "description": "List of all circles the user belongs to, showing circle name, member count, city, and next dinner date if one is active.",
+          "interaction": "Tap a circle to open its detail screen.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-02",
+          "name": "Circle Discovery — Browse by City",
+          "description": "Browse public circles in a selected city, sorted by member count or recency.",
+          "interaction": "City selector at top. Scrollable list of circle cards with Join button.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-03",
+          "name": "Join Circle — Invite Code Entry",
+          "description": "Luma agent prompts the user to enter a 6-character invite code. Resolves the code and shows a preview of the circle before joining.",
+          "interaction": "User types or pastes code into the agent input. Luma surfaces the circle card with Join and Not Now options.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-04",
+          "name": "Join Circle — Confirmation",
+          "description": "Success state after joining a circle. Luma confirms membership and shows the user's updated circle list.",
+          "interaction": "Luma message confirms. Circle appears in My Circles with a NEW badge.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-05",
+          "name": "Create Circle — Conversational Wizard",
+          "description": "5-step creation flow driven by the Luma agent: circle name, vibe, city, privacy, and dinner cadence. Each step is a conversational prompt with tap or type input.",
+          "interaction": "User answers each step via typed response or tap selection. Progress is shown as answered fields above.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-06",
+          "name": "Create Circle — Preview & Confirm",
+          "description": "Summary card showing all circle details before creation. User can confirm or go back to edit.",
+          "interaction": "Create Circle button commits. Edit button steps back into the wizard.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-07",
+          "name": "Circle Detail — Member View",
+          "description": "Circle detail screen for regular members. Shows upcoming dinner, member avatars, memories grid, circle badge, and a Luma agent panel for quick actions.",
+          "interaction": "Tap upcoming dinner for details. See all members. Set availability. Browse memories.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-08",
+          "name": "Circle Detail — Admin View",
+          "description": "Extended circle detail for owners and admins. Includes pending join requests, member management, nudge capability, and full settings access.",
+          "interaction": "Review pending requests. Manage members via role and status controls. Access settings.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-09",
+          "name": "Member Management",
+          "description": "Admin capability to promote members to moderator or admin, or block/remove them from the circle.",
+          "interaction": "Long press or action menu on a member row. Role and status changes are confirmed before applying.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-10",
+          "name": "Circle Settings",
+          "description": "Admin-only screen to update circle name, vibe, privacy, pairing frequency, preferred restaurant count, and dinner size limits.",
+          "interaction": "Form-based editing. Changes saved on submit.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-11",
+          "name": "Circle Hashtags",
+          "description": "Admin can add or update hashtag tags for the circle to aid discoverability.",
+          "interaction": "Tag input with autocomplete. Tap X to remove a tag.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-12",
+          "name": "Circle Invite — Share Badge",
+          "description": "Generates a shareable circle badge and invite code. Admin and members can share the badge externally to recruit new members.",
+          "interaction": "Share Badge button opens native share sheet. Copy Code copies the 6-character code to clipboard.",
+          "is_complete": true
+        },
+        {
+          "id": "CIRC-13",
+          "name": "Circle Memories",
+          "description": "Photo grid within the circle detail showing photos submitted by members from past dinners.",
+          "interaction": "Add Photo opens image picker. Tap photo to view full screen.",
+          "is_complete": false
+        },
+        {
+          "id": "CIRC-14",
+          "name": "Delete Circle",
+          "description": "Owner-only action to permanently delete the circle and all associated data.",
+          "interaction": "Available in circle settings. Requires explicit confirmation. Irreversible.",
+          "is_complete": false
+        },
+        {
+          "id": "CIRC-15",
+          "name": "Nudge Members",
+          "description": "Admin capability to send a prompt to members who have not yet set their availability for an upcoming dinner cycle.",
+          "interaction": "Nudge them button appears when unavailable member count is surfaced by Luma.",
+          "is_complete": false
+        }
+      ]
+    },
+    {
+      "module_name": "Dinner Events",
+      "features": [
+        {
+          "id": "DIN-01",
+          "name": "Create Dinner Event",
+          "description": "Host creates a new dinner event within a circle. Collects title, venue, address, date and time, group size, vibe, and cancellation policy.",
+          "interaction": "Form or conversational input via Luma. Host is automatically added as the first accepted participant.",
+          "is_complete": true
+        },
+        {
+          "id": "DIN-02",
+          "name": "Invite Circle Members",
+          "description": "After creating a dinner event, the host sends invitations to circle members. Members receive a notification and can accept or decline.",
+          "interaction": "Host selects members to invite. All accepted circle members can be bulk-invited.",
+          "is_complete": true
+        },
+        {
+          "id": "DIN-03",
+          "name": "Dinner Invite — RSVP Screen",
+          "description": "Screen presented to an invited member showing event details, host name, accepted count with avatars, and Accept / Decline actions.",
+          "interaction": "Accept adds user to the dinner pool. Decline removes them. Luma confirms the outcome conversationally.",
+          "is_complete": true
+        },
+        {
+          "id": "DIN-04",
+          "name": "Waiting for Pairs Screen",
+          "description": "Post-accept holding state. Shows the user they are in the pool, how many others have accepted, and when pairs will be announced.",
+          "interaction": "Progress bar showing accepted count. Luma surfaces nudge option if some members haven't responded.",
+          "is_complete": true
+        },
+        {
+          "id": "DIN-05",
+          "name": "Event Management — Host View",
+          "description": "Host-facing event detail showing invite response counts, match status, and controls to trigger pairing, edit event details, or cancel the event.",
+          "interaction": "Manage button on circle detail opens this view. Pair Now triggers the matching algorithm.",
+          "is_complete": true
+        },
+        {
+          "id": "DIN-06",
+          "name": "Auto-Rotation — Round Tracking",
+          "description": "System tracks which round number a dinner event represents within its circle and auto-advances to the next round when all matches resolve.",
+          "interaction": "Fully automated. Round number displayed on event for admin context.",
+          "is_complete": true
+        },
+        {
+          "id": "DIN-07",
+          "name": "Past Dinners",
+          "description": "Archive of completed dinner events within a circle, showing date, venue, and attendance outcomes.",
+          "interaction": "Accessible from circle detail via Past Dinners quick action.",
+          "is_complete": false
+        }
+      ]
+    },
+    {
+      "module_name": "Pairing Flow",
+      "features": [
+        {
+          "id": "PAIR-01",
+          "name": "Pair Reveal — Countdown",
+          "description": "Pre-reveal state shown to guests who have been matched but whose reveal_at timestamp has not yet passed. Shows a countdown to when the pair will be visible.",
+          "interaction": "Read-only countdown display. No actions available until reveal window opens.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-02",
+          "name": "Pair Reveal — Match Card",
+          "description": "Full match reveal showing partner's first name, profile photo, occupation, shared interests, and venue details. Presented by Luma once reveal_at has passed.",
+          "interaction": "Confirm I'll be there locks in attendance. Can't make it opens the decline flow.",
+          "is_complete": true
+        },
+        {
+          "id": "PAIR-03",
+          "name": "Confirm Match",
+          "description": "Guest confirms they will attend their paired dinner. When both guests confirm, the match is automatically promoted to confirmed status and both are notified.",
+          "interaction": "Single tap action. Luma transitions the conversation to a waiting state until partner also confirms.",
+          "is_complete": true
+        },
+        {
+          "id": "PAIR-04",
+          "name": "Waiting for Partner Confirmation",
+          "description": "Intermediate state after one guest confirms but the partner has not yet. Shows a live indicator of partner's pending status.",
+          "interaction": "Animated pending indicator. Cancel my spot option remains accessible. Resolves automatically via Realtime when partner confirms.",
+          "is_complete": true
+        },
+        {
+          "id": "PAIR-05",
+          "name": "Decline Match",
+          "description": "Guest opts out of their assigned pair after reveal. Cancels the match, notifies the partner, and applies the circle's cancellation policy (skip round or requeue).",
+          "interaction": "Can't make it tap opens decline confirmation. Luma explains the outcome based on cancellation policy.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-06",
+          "name": "Partner Declined — Requeue or Skip",
+          "description": "Screen shown when the partner has declined the match. Luma notifies the user and presents options based on the circle's cancellation policy — stay in the pool or sit out the round.",
+          "interaction": "Keep me in re-adds the user to the unmatched pool. Skip this round opts them out gracefully.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-07",
+          "name": "Confirmed Dinner Detail",
+          "description": "Full detail screen once both guests have confirmed. Shows event date and time, venue with map preview, partner profile (full name now visible), and action chips for calendar, check-in, and cancellation.",
+          "interaction": "Get Directions opens native maps. Add to Calendar invokes platform calendar API. Check In chip is disabled until the day-of window opens.",
+          "is_complete": true
+        },
+        {
+          "id": "PAIR-08",
+          "name": "Add to Calendar",
+          "description": "Adds the confirmed dinner to the user's device calendar with venue, time, partner name, and a deep link back to the dinner detail.",
+          "interaction": "Tap Add to Calendar chip on confirmed detail screen. Native calendar sheet is presented.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-09",
+          "name": "Day-of Check In",
+          "description": "Location-gated check-in available within a configurable window around the dinner start time. Validates the user's device location is within 500m of the venue before recording the check-in.",
+          "interaction": "Check In chip activates when the window opens. Proximity validation runs on submit. Partner's check-in status is shown live.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-10",
+          "name": "Attendance Report",
+          "description": "Post-dinner prompt asking the user whether they attended. Available after the dinner time has passed, up to the reporting deadline (scheduled date + 72 hours). Affects the user's reliability score.",
+          "interaction": "Yes I went increments dinners_attended. Couldn't make it is recorded as a no-show. Luma surfaces a flake score warning before the user confirms a no-show.",
+          "is_complete": true
+        },
+        {
+          "id": "PAIR-11",
+          "name": "Late Cancellation",
+          "description": "If a user cancels a confirmed match close to the dinner date, a flake score impact warning is shown before the cancellation is processed.",
+          "interaction": "Can't go action on confirmed detail. Confirmation modal with flake score warning. Notifies partner on confirm.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-12",
+          "name": "Odd-Number Pairing",
+          "description": "When the accepted pool has an odd number of participants, the algorithm creates one group of 3 rather than leaving someone unmatched.",
+          "interaction": "Fully automated. Transparent to users except group_size on their match card.",
+          "is_complete": false
+        },
+        {
+          "id": "PAIR-13",
+          "name": "Repeat Match Prevention",
+          "description": "Pairing algorithm avoids matching two people who have been paired together in a previous round within the same circle.",
+          "interaction": "Fully automated. No user-facing interaction.",
+          "is_complete": false
+        }
+      ]
+    },
+    {
+      "module_name": "Feedback",
+      "features": [
+        {
+          "id": "FB-01",
+          "name": "Feedback Prompt",
+          "description": "After a user reports attendance, Luma immediately surfaces a feedback request for the dinner.",
+          "interaction": "Conversational prompt from Luma. User can engage or dismiss.",
+          "is_complete": false
+        },
+        {
+          "id": "FB-02",
+          "name": "Star Rating",
+          "description": "1–5 star rating of the overall dinner experience.",
+          "interaction": "Tap stars to select rating. Rating is required before submission.",
+          "is_complete": false
+        },
+        {
+          "id": "FB-03",
+          "name": "Quick Tags",
+          "description": "Pre-defined tags the user can select to describe the dinner (e.g. Great conversation, Perfect venue, Would meet again, Too loud).",
+          "interaction": "Tap to select, tap again to deselect. Multiple selections allowed.",
+          "is_complete": false
+        },
+        {
+          "id": "FB-04",
+          "name": "Free Text Note",
+          "description": "Optional open text field for additional comments about the dinner.",
+          "interaction": "Multiline text input. Optional.",
+          "is_complete": false
+        },
+        {
+          "id": "FB-05",
+          "name": "Photo Upload",
+          "description": "Optional photo submission attached to feedback. Photos appear in the circle's Memories grid.",
+          "interaction": "Opens device image picker. Multiple photos can be added. Preview thumbnails shown before submit.",
+          "is_complete": false
+        },
+        {
+          "id": "FB-06",
+          "name": "Feedback Submission",
+          "description": "Submits the completed feedback. Guarded so only users who reported attendance = true can submit.",
+          "interaction": "Submit button. Luma confirms submission and transitions conversation forward.",
+          "is_complete": false
+        }
+      ]
+    },
+    {
+      "module_name": "Profile",
+      "features": [
+        {
+          "id": "PROF-01",
+          "name": "Profile Screen",
+          "description": "User's own profile view showing photo, name, bio, occupation, interests, and activity stats (dinners attended, reliability score).",
+          "interaction": "Accessible from home avatar and My Profile quick action.",
+          "is_complete": true
+        },
+        {
+          "id": "PROF-02",
+          "name": "Edit Profile",
+          "description": "Inline editing of name, bio, occupation, and interests.",
+          "interaction": "Edit button opens editable fields. Save commits changes.",
+          "is_complete": true
+        },
+        {
+          "id": "PROF-03",
+          "name": "Profile Photo Upload",
+          "description": "Upload or replace profile photo from the device camera roll.",
+          "interaction": "Tap avatar to open image picker. Cropping UI before upload. Stored in Supabase storage under the user's ID.",
+          "is_complete": true
+        },
+        {
+          "id": "PROF-04",
+          "name": "Interests Management",
+          "description": "Add or remove interest tags from the user's profile.",
+          "interaction": "Tag selector with current selections shown. Changes update user_profiles.interests.",
+          "is_complete": true
+        },
+        {
+          "id": "PROF-05",
+          "name": "Availability Settings",
+          "description": "User sets their general availability window (date range and preferred time slots) so Luma can account for it during dinner cycle planning.",
+          "interaction": "Date pickers for start and end date. Multi-select chips for time slots (morning, afternoon, evening).",
+          "is_complete": true
+        },
+        {
+          "id": "PROF-06",
+          "name": "Reliability Score Display",
+          "description": "Shows the user their flake score and confidence level (High / Medium / Low Confidence) based on their attendance history.",
+          "interaction": "Read-only display on profile. Tooltip explains what the score means.",
+          "is_complete": true
+        },
+        {
+          "id": "PROF-07",
+          "name": "Dinners Attended Counter",
+          "description": "Running total of dinners the user has attended, shown on their profile.",
+          "interaction": "Read-only. Incremented automatically when attendance is reported.",
+          "is_complete": true
+        }
+      ]
+    },
+    {
+      "module_name": "Notifications",
+      "features": [
+        {
+          "id": "NOTIF-01",
+          "name": "In-App Notification Feed",
+          "description": "Chronological list of all notifications for the user — dinner invites, pairing updates, match confirmations, attendance reminders, and feedback prompts.",
+          "interaction": "Accessible from the bell icon on home. Tapping a notification routes to the relevant screen. Unread notifications are visually distinguished.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-02",
+          "name": "Unread Badge Count",
+          "description": "Badge on the notification bell reflecting the count of unread notifications. Decrements as notifications are read.",
+          "interaction": "Auto-updates via Realtime. Clears when notification list is opened.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-03",
+          "name": "Push Notifications — FCM",
+          "description": "Firebase Cloud Messaging push notifications delivered to the device for all key events in the dinner and pairing lifecycle.",
+          "interaction": "Tapping the push notification deep-links to the relevant in-app screen.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-04",
+          "name": "Dinner Invite Notification",
+          "description": "Push and in-app notification sent when a user is invited to a dinner event.",
+          "interaction": "Routes to the RSVP screen.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-05",
+          "name": "Waiting for Pairs Notification",
+          "description": "Confirmation notification sent after a user accepts a dinner invite, confirming they are in the pool.",
+          "interaction": "Routes to the waiting screen.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-06",
+          "name": "Pair Ready Notification",
+          "description": "Push and in-app notification sent when the dinner event is paired, prompting users to check their match.",
+          "interaction": "Routes to the pair reveal screen.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-07",
+          "name": "Match Confirmed Notification",
+          "description": "Sent to both guests when the match status transitions to confirmed — i.e. both parties have accepted the pairing.",
+          "interaction": "Routes to the confirmed dinner detail screen.",
+          "is_complete": true
+        },
+        {
+          "id": "NOTIF-08",
+          "name": "Match Cancelled Notification",
+          "description": "Sent to the remaining guest when their partner declines the match. Explains the requeue or skip-round outcome.",
+          "interaction": "Routes to the partner declined screen.",
+          "is_complete": false
+        },
+        {
+          "id": "NOTIF-09",
+          "name": "Attendance Reminder Notification",
+          "description": "Scheduled push notification sent after the dinner time has passed prompting the user to report whether they attended.",
+          "interaction": "Routes to the attendance report screen.",
+          "is_complete": false
+        },
+        {
+          "id": "NOTIF-10",
+          "name": "Feedback Prompt Notification",
+          "description": "Sent after a user reports attendance = true, prompting them to rate and leave feedback for the dinner.",
+          "interaction": "Routes to the feedback screen.",
+          "is_complete": false
+        },
+        {
+          "id": "NOTIF-11",
+          "name": "Notification Routing",
+          "description": "Each notification_type maps to a specific in-app destination. Tapping any notification from cold start or background correctly deep-links to the right screen with the right data loaded.",
+          "interaction": "Handled at the app router level using notification data payload.",
+          "is_complete": false
+        }
+      ]
+    },
+    {
+      "module_name": "App Invites",
+      "features": [
+        {
+          "id": "INV-01",
+          "name": "Invite Friends via SMS",
+          "description": "User can invite contacts who are not yet on Luma by selecting from their device contacts. An SMS is sent via Twilio with a personalised invite message.",
+          "interaction": "Opens contact picker. Selected contacts are previewed before sending. Send action records the invite and increments invites_sent_count.",
+          "is_complete": true
+        },
+        {
+          "id": "INV-02",
+          "name": "In-App vs New User Detection",
+          "description": "Before composing an invite, the app checks which selected phone numbers are already registered on Luma, so the user only sends SMS invites to genuinely new contacts.",
+          "interaction": "Already-on-Luma contacts are flagged in the contact picker with their display name.",
+          "is_complete": true
+        },
+        {
+          "id": "INV-03",
+          "name": "Invite Tracking",
+          "description": "Tracks every SMS invite sent including inviter, invitee phone, message body, and delivery status. Displayed in the user's quest or stats context.",
+          "interaction": "Read-only. Invite count visible on profile.",
+          "is_complete": true
+        }
+      ]
+    },
+    {
+      "module_name": "Settings",
+      "features": [
+        {
+          "id": "SET-01",
+          "name": "Settings Screen",
+          "description": "Central settings hub accessible from the user profile. Contains account, notification, and app preference controls.",
+          "interaction": "List-based navigation to sub-settings.",
+          "is_complete": true
+        },
+        {
+          "id": "SET-02",
+          "name": "Push Notification Preferences",
+          "description": "Toggle push notifications on or off at the app level. Links to system notification settings if permission has been denied.",
+          "interaction": "Toggle switch. If off, in-app notifications still work.",
+          "is_complete": false
+        },
+        {
+          "id": "SET-03",
+          "name": "FCM Token Management",
+          "description": "Registers and refreshes the FCM device token on login and token refresh. Token is stored on user_profiles for push targeting.",
+          "interaction": "Fully automated. No user-facing interaction.",
+          "is_complete": true
+        },
+        {
+          "id": "SET-04",
+          "name": "Privacy Settings",
+          "description": "Controls for profile visibility and whether the user can be found in city-based circle discovery.",
+          "interaction": "Toggle switches per privacy option.",
+          "is_complete": false
+        },
+        {
+          "id": "SET-05",
+          "name": "Terms & Privacy Policy",
+          "description": "Links to the Luma terms of service and privacy policy documents.",
+          "interaction": "Opens in-app web view or external browser.",
+          "is_complete": false
+        },
+        {
+          "id": "SET-06",
+          "name": "Sign Out",
+          "description": "Ends the current session and routes to the auth screen.",
+          "interaction": "Confirmation prompt before sign out.",
+          "is_complete": true
+        },
+        {
+          "id": "SET-07",
+          "name": "Delete Account",
+          "description": "Permanently removes the user's profile, auth record, and all associated data.",
+          "interaction": "Requires typing a confirmation phrase. Irreversible.",
+          "is_complete": true
+        }
+      ]
+    },
+    {
+      "module_name": "Realtime & Sync",
+      "features": [
+        {
+          "id": "RT-01",
+          "name": "Match Guest Confirmation Listener",
+          "description": "Realtime subscription on dinner_match_guests that detects when the partner's confirmed field flips to true. Automatically transitions the waiting screen to the confirmed dinner detail without a manual refresh.",
+          "interaction": "Transparent to user. UI transitions automatically.",
+          "is_complete": false
+        },
+        {
+          "id": "RT-02",
+          "name": "Match Cancellation Listener",
+          "description": "Realtime subscription on dinner_match_guests that detects when the partner's declined_at is set. Surfaces the partner declined screen automatically.",
+          "interaction": "Transparent to user. Luma message appears surfacing the cancellation.",
+          "is_complete": false
+        },
+        {
+          "id": "RT-03",
+          "name": "Check-In Status Listener",
+          "description": "Realtime subscription on dinner_check_ins that updates the partner's check-in status on the day-of check-in screen without requiring a refresh.",
+          "interaction": "Partner status badge updates from Not yet to Checked in live.",
+          "is_complete": false
+        },
+        {
+          "id": "RT-04",
+          "name": "Notification Feed Listener",
+          "description": "Realtime subscription on the notifications table that pushes new notifications into the in-app feed and increments the unread badge without requiring the user to pull-to-refresh.",
+          "interaction": "New notification appears at top of feed. Bell badge increments.",
+          "is_complete": false
+        }
+      ]
+    }
+  ]
+}
+
