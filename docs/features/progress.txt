@@ -24,3 +24,10 @@
 - Added app-wide focus dismissal support: tap-outside unfocus at root app level and route-transition unfocus via navigator observer
 - Updated pairing state card visual hierarchy for invite, waiting, reveal, confirmed, check-in, attendance, and feedback screens
 - Ran flutter analyze to validate the UI refinement pass with no analyzer issues
+
+[2026-03-08] Integrated the first home landing dashboard as a shell widget state.
+- Added HomeDashboardView payload models and a HomeDashboardCard conversation widget for confirmed dinner, open seats rail, and quick action grid
+- Extended shell state/resolver/preview plumbing with a dedicated homeDashboard state while keeping the single-screen conversation shell architecture
+- Updated shell top chrome, header/notification/composer behavior, and action handlers to render home as the default state and support state switching
+- Added home-specific tokens in strings, colors, dimensions, and text styles to match the provided home mockup structure
+- Verified the integration with flutter analyze (no analyzer issues)

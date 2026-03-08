@@ -8,6 +8,9 @@ enum ShellWidget {
   /// No contextual widget is currently active.
   none,
 
+  /// Home dashboard state.
+  homeDashboard,
+
   /// Dinner invite prompt.
   dinnerInvite,
 

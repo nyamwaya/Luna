@@ -2,9 +2,11 @@ import '../../models/dinner_event.dart';
 import '../../models/dinner_invite.dart';
 import '../../models/dinner_match.dart';
 import '../../models/guest_dinner_event_view.dart';
+import '../../models/home/home_dashboard_view.dart';
 import '../../models/match_detail.dart';
 import '../../models/match_guest.dart';
 import '../../models/user_profile.dart';
+import '../../strings.dart';
 import 'conversation_shell_state.dart';
 
 /// Provides preview payloads for shell foundation states.
@@ -13,6 +15,7 @@ abstract final class ConversationShellPreviewData {
   static Map<String, dynamic> dataFor(ShellWidget widget) {
     return switch (widget) {
       ShellWidget.none => const <String, dynamic>{},
+      ShellWidget.homeDashboard => _buildHomeDashboardView().toJson(),
       ShellWidget.dinnerInvite => _buildDinnerInvite().toJson(),
       ShellWidget.waitingForPairs => _buildGuestEventView().toJson(),
       ShellWidget.pairReveal => _buildPairRevealDetail().toJson(),
@@ -23,6 +26,45 @@ abstract final class ConversationShellPreviewData {
       ShellWidget.attendanceReport => _buildConfirmedDetail().toJson(),
       ShellWidget.feedback => _buildCompletedDetail().toJson(),
     };
+  }
+
+  static HomeDashboardView _buildHomeDashboardView() {
+    return HomeDashboardView(
+      city: Strings.homeCity,
+      userInitials: 'AL',
+      quickActionsPrompt: Strings.homeQuickActionsPrompt,
+      openSeatsPrompt: Strings.homeOpenSeatsPrompt,
+      activeCircleCount: 3,
+      confirmedDinner: const HomeConfirmedDinner(
+        badge: Strings.homeConfirmedBadge,
+        dateLabel: Strings.homeConfirmedDate,
+        timeLabel: Strings.homeConfirmedTime,
+        venue: Strings.homeConfirmedVenue,
+        city: Strings.homeConfirmedVenueCity,
+      ),
+      openSeats: const <HomeOpenSeat>[
+        HomeOpenSeat(
+          id: 'home-open-seat-foodies',
+          title: Strings.homeSeatMplsFoodies,
+          subtitle: Strings.homeSeatMplsFoodiesDate,
+          seatsLeft: 2,
+          isHot: true,
+        ),
+        HomeOpenSeat(
+          id: 'home-open-seat-runners',
+          title: Strings.homeSeatNorthsideRunners,
+          subtitle: Strings.homeSeatNorthsideRunnersDate,
+          seatsLeft: 3,
+        ),
+        HomeOpenSeat(
+          id: 'home-open-seat-uptown',
+          title: Strings.homeSeatUptownBrunchClub,
+          subtitle: Strings.homeSeatUptownBrunchClubDate,
+          seatsLeft: 1,
+          isHot: true,
+        ),
+      ],
+    );
   }
 
   static DinnerInvite _buildDinnerInvite() {

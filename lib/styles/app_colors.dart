@@ -26,6 +26,11 @@ class AppColors {
   static const Color successDark = Color(0xFF133828);
   static const Color successPill = Color(0xFF2D6A4F);
   static const Color warning = Color(0xFFF0B94B);
+  static const Color homeHotGradientStart = Color(0xFFBB4D60);
+  static const Color homeHotGradientEnd = Color(0xFFF08A5B);
+  static const Color homeCoolGradientStart = Color(0xFF0F5B5C);
+  static const Color homeCoolGradientEnd = Color(0xFF4BA379);
+  static const Color homeSeatPill = Color(0xFF17313A);
 
   // Semantic
   static const Color success = Color(0xFF3D6B4F);

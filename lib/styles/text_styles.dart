@@ -90,6 +90,43 @@ class AppTextStyles {
     height: 1.25,
   );
 
+  static const TextStyle homeBadge = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    color: AppColors.gold,
+    letterSpacing: 1.0,
+    height: 1.1,
+  );
+
+  static const TextStyle homeConfirmedDate = TextStyle(
+    fontSize: 34,
+    fontWeight: FontWeight.w700,
+    color: AppColors.ink,
+    height: 0.95,
+  );
+
+  static const TextStyle homeConfirmedTime = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w500,
+    color: AppColors.inkFaint,
+    fontStyle: FontStyle.italic,
+    height: 1.0,
+  );
+
+  static const TextStyle homeSeatPill = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.white,
+    height: 1.0,
+  );
+
+  static const TextStyle homeSeatTitle = TextStyle(
+    fontSize: 33,
+    fontWeight: FontWeight.w700,
+    color: AppColors.ink,
+    height: 0.9,
+  );
+
   static const TextStyle heroTitle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w500,

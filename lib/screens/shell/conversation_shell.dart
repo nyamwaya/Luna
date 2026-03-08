@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/conversation_message.dart';
+import '../../models/home/home_dashboard_view.dart';
 import '../../strings.dart';
 import '../../styles/app_colors.dart';
 import '../../styles/dimensions.dart';
@@ -29,7 +30,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     _composerController = TextEditingController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _activatePreview(ShellWidget.dinnerInvite);
+      _activatePreview(ShellWidget.homeDashboard);
     });
   }
 
@@ -45,7 +46,11 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     final ConversationShellController controller =
         ref.read(conversationShellControllerProvider.notifier);
     final ShellWidget activeWidget =
-        state.activeWidget == ShellWidget.none ? ShellWidget.dinnerInvite : state.activeWidget;
+        state.activeWidget == ShellWidget.none ? ShellWidget.homeDashboard : state.activeWidget;
+    final HomeDashboardView? homeView =
+        activeWidget == ShellWidget.homeDashboard && state.widgetData.isNotEmpty
+        ? HomeDashboardView.fromJson(state.widgetData)
+        : null;
 
     final Widget? resolvedWidget = ConversationWidgetResolver.resolve(
       state: state.activeWidget == ShellWidget.none
@@ -72,6 +77,27 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
         controller.clearActiveWidget();
       },
       onSubmitFeedback: () {},
+      onOpenHomeDinnerDetails: () {
+        controller.addLumaMessage(Strings.homeDinnerDetailsTapped);
+        _activatePreview(ShellWidget.confirmedDinner);
+      },
+      onRequestHomeSeat: (HomeOpenSeat seat) {
+        controller.addLumaMessage(
+          '${Strings.homeSeatRequested} ${seat.title}.',
+        );
+      },
+      onTapHomeFindDinner: () {
+        controller.addLumaMessage(Strings.homeFindDinnerTapped);
+      },
+      onTapHomeMyCircles: () {
+        controller.addLumaMessage(Strings.homeMyCirclesTapped);
+      },
+      onTapHomeStartCircle: () {
+        controller.addLumaMessage(Strings.homeStartCircleTapped);
+      },
+      onTapHomeMyProfile: () {
+        controller.addLumaMessage(Strings.homeMyProfileTapped);
+      },
     );
 
     return Scaffold(
@@ -90,42 +116,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
                   Dimensions.md,
                   Dimensions.sm,
                 ),
-                child: Row(
-                  children: <Widget>[
-                    TextButton.icon(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
-                      label: const Text(Strings.backLabel),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.gold,
-                        textStyle: AppTextStyles.shellAction,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        _headerTitleFor(activeWidget),
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.shellTitle,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _showStatePicker,
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: const BoxDecoration(
-                          color: AppColors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: AppColors.gold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: _buildTopChrome(activeWidget, homeView),
               ),
             ),
             // ── Chat content ────────────────────────────────────────────
@@ -139,12 +130,14 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate(
                   <Widget>[
-                    PairingNotificationBar(
-                      label: _notificationLabelFor(activeWidget),
-                      actionLabel: Strings.expandLabel,
-                      onTap: _showStatePicker,
-                    ),
-                    const SizedBox(height: Dimensions.lg),
+                    if (activeWidget != ShellWidget.homeDashboard) ...<Widget>[
+                      PairingNotificationBar(
+                        label: _notificationLabelFor(activeWidget),
+                        actionLabel: Strings.expandLabel,
+                        onTap: _showStatePicker,
+                      ),
+                      const SizedBox(height: Dimensions.lg),
+                    ],
                     ...state.messages.map(_buildMessage),
                     if (resolvedWidget != null) ...<Widget>[
                       const SizedBox(height: Dimensions.lg),
@@ -171,6 +164,89 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTopChrome(ShellWidget widget, HomeDashboardView? homeView) {
+    if (widget == ShellWidget.homeDashboard && homeView != null) {
+      return Row(
+        children: <Widget>[
+          CircleAvatar(
+            radius: Dimensions.avatarMd / 2,
+            backgroundColor: AppColors.goldLight,
+            child: Text(
+              homeView.userInitials,
+              style: AppTextStyles.bodySm.copyWith(
+                color: AppColors.ink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(homeView.city, style: AppTextStyles.h3.copyWith(fontSize: 30)),
+                const SizedBox(width: Dimensions.xs),
+                const Icon(Icons.expand_more, color: AppColors.inkSoft),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: _showStatePicker,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.gold,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: <Widget>[
+        TextButton.icon(
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+          label: const Text(Strings.backLabel),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.gold,
+            textStyle: AppTextStyles.shellAction,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            _headerTitleFor(widget),
+            textAlign: TextAlign.center,
+            style: AppTextStyles.shellTitle,
+          ),
+        ),
+        GestureDetector(
+          onTap: _showStatePicker,
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.gold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -232,6 +308,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
   String _headerTitleFor(ShellWidget widget) {
     return switch (widget) {
       ShellWidget.none => Strings.headerInvitePending,
+      ShellWidget.homeDashboard => Strings.headerHome,
       ShellWidget.dinnerInvite => Strings.headerInvitePending,
       ShellWidget.waitingForPairs => Strings.headerInviteAccepted,
       ShellWidget.pairReveal => Strings.headerMatchRevealed,
@@ -247,6 +324,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
   String _notificationLabelFor(ShellWidget widget) {
     return switch (widget) {
       ShellWidget.none => Strings.notificationNew,
+      ShellWidget.homeDashboard => Strings.notificationNew,
       ShellWidget.dinnerInvite => Strings.notificationNew,
       ShellWidget.waitingForPairs => Strings.notificationAcceptedInvite,
       ShellWidget.pairReveal => Strings.notificationPairReady,
@@ -261,6 +339,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
 
   String _composerPlaceholderFor(ShellWidget widget) {
     return switch (widget) {
+      ShellWidget.homeDashboard => Strings.homeComposerPlaceholder,
       ShellWidget.confirmedDinner => Strings.askAboutYourDinnerPlaceholder,
       ShellWidget.dinnerInvite => Strings.askAboutDinnerPlaceholder,
       _ => Strings.saySomethingPlaceholder,
@@ -270,24 +349,16 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
   String _primaryMessageFor(ShellWidget widget) {
     return switch (widget) {
       ShellWidget.none => Strings.shellIntroMessage,
-      ShellWidget.dinnerInvite =>
-        'You\'ve been invited to a dinner by Marcus. Want to join the pool?',
-      ShellWidget.waitingForPairs =>
-        'You\'re in the pool. Pairs drop in 4 days — I\'ll notify you the moment yours is ready.',
-      ShellWidget.pairReveal =>
-        'Your dinner partner is here. You and Priya share a lot in common — confirm to lock it in.',
-      ShellWidget.waitingForPartner =>
-        'You\'re confirmed. Waiting for Priya to confirm her side — I\'ll let you know as soon as she does.',
-      ShellWidget.partnerDeclined =>
-        'Priya can\'t make this one. You\'ve been re-added to the pool — I\'ll find you a new match if there\'s someone available.',
-      ShellWidget.confirmedDinner =>
-        'You\'re both in. Priya confirmed too — see you Thursday at Spoon & Stable.',
-      ShellWidget.checkIn =>
-        'You\'re near Spoon & Stable. Check in to let Priya know you\'re here.',
-      ShellWidget.attendanceReport =>
-        'Hope the evening was great. Did you make it to dinner?',
-      ShellWidget.feedback =>
-        'Glad you went. How was the dinner with Priya?',
+      ShellWidget.homeDashboard => Strings.homePrimaryMessage,
+      ShellWidget.dinnerInvite => Strings.shellDinnerInviteMessage,
+      ShellWidget.waitingForPairs => Strings.shellWaitingForPairsMessage,
+      ShellWidget.pairReveal => Strings.shellPairRevealMessage,
+      ShellWidget.waitingForPartner => Strings.shellWaitingForPartnerMessage,
+      ShellWidget.partnerDeclined => Strings.shellPartnerDeclinedMessage,
+      ShellWidget.confirmedDinner => Strings.shellConfirmedDinnerMessage,
+      ShellWidget.checkIn => Strings.shellCheckInMessage,
+      ShellWidget.attendanceReport => Strings.shellAttendanceReportMessage,
+      ShellWidget.feedback => Strings.shellFeedbackMessage,
     };
   }
 }

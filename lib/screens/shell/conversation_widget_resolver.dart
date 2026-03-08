@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/dinner_invite.dart';
 import '../../models/guest_dinner_event_view.dart';
+import '../../models/home/home_dashboard_view.dart';
 import '../../models/match_detail.dart';
 import '../../strings.dart';
 import '../../widgets/conversation/attendance_report_card.dart';
@@ -9,6 +10,7 @@ import '../../widgets/conversation/check_in_widget.dart';
 import '../../widgets/conversation/confirmed_dinner_card.dart';
 import '../../widgets/conversation/dinner_invite_card.dart';
 import '../../widgets/conversation/feedback_widget.dart';
+import '../../widgets/conversation/home_dashboard_card.dart';
 import '../../widgets/conversation/pair_reveal_card.dart';
 import '../../widgets/conversation/partner_declined_card.dart';
 import '../../widgets/conversation/waiting_for_pairs_card.dart';
@@ -31,10 +33,26 @@ abstract final class ConversationWidgetResolver {
     required VoidCallback onOpenCheckIn,
     required ValueChanged<bool> onReportAttendance,
     required VoidCallback onSubmitFeedback,
+    required VoidCallback onOpenHomeDinnerDetails,
+    required ValueChanged<HomeOpenSeat> onRequestHomeSeat,
+    required VoidCallback onTapHomeFindDinner,
+    required VoidCallback onTapHomeMyCircles,
+    required VoidCallback onTapHomeStartCircle,
+    required VoidCallback onTapHomeMyProfile,
   }) {
     switch (state.activeWidget) {
       case ShellWidget.none:
         return null;
+      case ShellWidget.homeDashboard:
+        return HomeDashboardCard(
+          view: HomeDashboardView.fromJson(state.widgetData),
+          onOpenConfirmedDinner: onOpenHomeDinnerDetails,
+          onRequestSeat: onRequestHomeSeat,
+          onTapFindDinner: onTapHomeFindDinner,
+          onTapMyCircles: onTapHomeMyCircles,
+          onTapStartCircle: onTapHomeStartCircle,
+          onTapMyProfile: onTapHomeMyProfile,
+        );
       case ShellWidget.dinnerInvite:
         return DinnerInviteCard(
           invite: DinnerInvite.fromJson(state.widgetData),
@@ -105,6 +123,7 @@ class ShellPreviewOption {
 
 /// The supported shell preview states for the pairing foundation.
 const List<ShellPreviewOption> shellPreviewOptions = <ShellPreviewOption>[
+  ShellPreviewOption(label: Strings.previewHome, widget: ShellWidget.homeDashboard),
   ShellPreviewOption(label: Strings.previewInvite, widget: ShellWidget.dinnerInvite),
   ShellPreviewOption(label: Strings.previewWaiting, widget: ShellWidget.waitingForPairs),
   ShellPreviewOption(label: Strings.previewReveal, widget: ShellWidget.pairReveal),

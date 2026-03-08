@@ -2,8 +2,27 @@ class Strings {
   static const String appTitle = 'Luma';
   static const String backLabel = 'Back';
   static const String expandLabel = 'Expand ›';
+  static const String headerHome = 'HOME';
   static const String shellIntroMessage =
       'I can walk you through every dinner pairing state from here.';
+  static const String shellDinnerInviteMessage =
+      'You\'ve been invited to a dinner by Marcus. Want to join the pool?';
+  static const String shellWaitingForPairsMessage =
+      'You\'re in the pool. Pairs drop in 4 days — I\'ll notify you the moment yours is ready.';
+  static const String shellPairRevealMessage =
+      'Your dinner partner is here. You and Priya share a lot in common — confirm to lock it in.';
+  static const String shellWaitingForPartnerMessage =
+      'You\'re confirmed. Waiting for Priya to confirm her side — I\'ll let you know as soon as she does.';
+  static const String shellPartnerDeclinedMessage =
+      'Priya can\'t make this one. You\'ve been re-added to the pool — I\'ll find you a new match if there\'s someone available.';
+  static const String shellConfirmedDinnerMessage =
+      'You\'re both in. Priya confirmed too — see you Thursday at Spoon & Stable.';
+  static const String shellCheckInMessage =
+      'You\'re near Spoon & Stable. Check in to let Priya know you\'re here.';
+  static const String shellAttendanceReportMessage =
+      'Hope the evening was great. Did you make it to dinner?';
+  static const String shellFeedbackMessage =
+      'Glad you went. How was the dinner with Priya?';
   static const String shellContextLabel = 'Pairing foundation preview';
   static const String shellPreviewPrompt = 'Preview shell states';
   static const String shellSectionLabel = 'LUMA';
@@ -30,6 +49,50 @@ class Strings {
   static const String askAboutYourDinnerPlaceholder = 'Ask about your dinner...';
   static const String saySomethingPlaceholder = 'Or say something...';
   static const String addNotePlaceholder = 'Add a note about the evening...';
+  static const String homeComposerPlaceholder =
+      'Set my availability for next week...';
+
+  // Home dashboard
+  static const String homePrimaryMessage =
+      'This is your home dashboard. I will keep it updated with your dinners, circles, and next actions.';
+  static const String homeCity = 'Minneapolis';
+  static const String homeOpenSeatsPrompt =
+      '4 dinners near you still have open seats this week.';
+  static const String homeQuickActionsPrompt = 'What do you want to do?';
+  static const String homeDetailsCta = 'Details →';
+  static const String homeRequestSeatCta = 'Request Seat';
+  static const String homeSeatLeftSuffix = 'left';
+  static const String homeFindDinner = 'Find a Dinner';
+  static const String homeFindDinnerSubtitle = 'Set your availability';
+  static const String homeMyCircles = 'My Circles';
+  static const String homeMyCirclesSubtitle = '3 active groups';
+  static const String homeStartCircle = 'Start a Circle';
+  static const String homeStartCircleSubtitle = 'Invite your people';
+  static const String homeMyProfile = 'My Profile';
+  static const String homeMyProfileSubtitle = 'Interests & preferences';
+  static const String homeConfirmedBadge = 'REC CENTER BALLERS · ✓ CONFIRMED';
+  static const String homeConfirmedDate = 'Thursday, Mar 19th';
+  static const String homeConfirmedTime = '7:30 PM';
+  static const String homeConfirmedVenue = 'Spoon & Stable';
+  static const String homeConfirmedVenueCity = 'Minneapolis';
+  static const String homeSeatMplsFoodies = 'MPLS Foodies';
+  static const String homeSeatMplsFoodiesDate = 'Fri Mar 20 · 7 PM';
+  static const String homeSeatNorthsideRunners = 'Northside Runners';
+  static const String homeSeatNorthsideRunnersDate = 'Sat Mar 22 · 8 PM';
+  static const String homeSeatUptownBrunchClub = 'Uptown Brunch Club';
+  static const String homeSeatUptownBrunchClubDate = 'Sun Mar 23 · 11 AM';
+  static const String homeFindDinnerTapped =
+      'Great — let\'s set your availability for this week.';
+  static const String homeMyCirclesTapped =
+      'Opening your circles. Want member view or admin view first?';
+  static const String homeStartCircleTapped =
+      'Perfect. I can help you start a new circle in a few steps.';
+  static const String homeMyProfileTapped =
+      'Opening your profile preferences and interests.';
+  static const String homeDinnerDetailsTapped =
+      'Here are your confirmed dinner details.';
+  static const String homeSeatRequested =
+      'Nice pick. I\'ve marked your request for this open seat.';
 
   // Pairing flow
   static const String dinnerInviteTitle = 'You have a dinner invite.';
@@ -131,6 +194,7 @@ class Strings {
 
   // Preview labels
   static const String previewInvite = 'Invite';
+  static const String previewHome = 'Home';
   static const String previewWaiting = 'Waiting';
   static const String previewReveal = 'Reveal';
   static const String previewPartner = 'Partner';
@@ -147,4 +211,8 @@ class Strings {
   static const String createCircleCta = 'Create Circle →';
   static const String copyCodeCta = 'Copy Code';
   static const String shareBadgeCta = 'Share Badge ↗';
+
+  static String homeActiveGroupsLabel(int count) => '$count active groups';
+
+  static String homeSeatsLeftLabel(int count) => '$count $homeSeatLeftSuffix';
 }
