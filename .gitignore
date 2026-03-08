@@ -1,1 +1,22 @@
 .env
+
+# Dart / Flutter tool state
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Build outputs
+build/
+
+# Flutter generated iOS/macOS artifacts
+ios/Flutter/ephemeral/
+ios/Pods/
+macos/Flutter/ephemeral/
+macos/Pods/
+
+# IDE and OS noise
+.DS_Store
+*.iml
+.idea/
+.vscode/
