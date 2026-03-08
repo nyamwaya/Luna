@@ -1,0 +1,7 @@
+
+[2026-03-07] Initialized base Flutter project structure.
+- Created initial directory structure based on architecture.md (models, repositories, services, screens, widgets, agent)
+- Added core dependencies: flutter_riverpod, go_router, supabase_flutter, logger, flutter_dotenv
+- Implemented base style and strings files (app_colors.dart, dimensions.dart, text_styles.dart, strings.dart)
+- Set up basic app routing with GoRouter in router.dart
+- Created placeholder ConversationShell in main.dart
