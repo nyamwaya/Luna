@@ -15,3 +15,12 @@
 - Added reusable shared conversation widgets and pairing-specific cards for invite, waiting, reveal, confirmed dinner, check-in, attendance, and feedback states
 - Expanded strings and updated the widget smoke test to cover the shell foundation
 - Verified the slice with flutter analyze and resolved all reported issues
+
+[2026-03-07] Refined pairing shell UI to match mockup minimalism and keyboard behavior.
+- Redesigned ConversationShell into a single-screen state-driven mockup shell with lighter top chrome and inline notification treatment
+- Restyled Luma messages to remove heavy card framing and align to minimalist conversational copy layout
+- Rebuilt PairingComposer as a unified inset pill with corrected sizing (fixed composer height, inset circular send action)
+- Integrated composer behavior into the chat flow so keyboard resize keeps the latest content visible above input
+- Added app-wide focus dismissal support: tap-outside unfocus at root app level and route-transition unfocus via navigator observer
+- Updated pairing state card visual hierarchy for invite, waiting, reveal, confirmed, check-in, attendance, and feedback screens
+- Ran flutter analyze to validate the UI refinement pass with no analyzer issues

@@ -12,6 +12,9 @@ class AppRouter {
 
   static final router = GoRouter(
     initialLocation: shell,
+    observers: <NavigatorObserver>[
+      _FocusDismissNavigatorObserver(),
+    ],
     routes: [
       GoRoute(
         path: shell,
@@ -32,4 +35,34 @@ class AppRouter {
       ),
     ],
   );
+}
+
+class _FocusDismissNavigatorObserver extends NavigatorObserver {
+  void _dismissFocus() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissFocus();
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissFocus();
+    super.didPop(route, previousRoute);
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissFocus();
+    super.didRemove(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _dismissFocus();
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+  }
 }

@@ -134,6 +134,11 @@ class ConversationShellController extends Notifier<ShellState> {
     );
   }
 
+  /// Replaces the current conversation feed with a new set of messages.
+  void replaceMessages(List<ConversationMessage> messages) {
+    state = state.copyWith(messages: messages);
+  }
+
   /// Sets the current loading state.
   void setLoading(bool isLoading) {
     state = state.copyWith(isLoading: isLoading);

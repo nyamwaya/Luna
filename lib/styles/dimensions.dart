@@ -19,6 +19,15 @@ class Dimensions {
   static const double avatarSm = 28.0;
   static const double avatarMd = 42.0;
   static const double avatarLg = 52.0;
+  static const double avatarXl = 76.0;
+
+  // Shell sizing
+  static const double notificationHeight = 54.0;
+  static const double composerHeight = 68.0;
+  static const double pillButtonHeight = 64.0;
+  static const double actionTileHeight = 120.0;
+  static const double statusPillHeight = 32.0;
+  static const double progressBarHeight = 6.0;
 
   // Card padding
   static const EdgeInsets cardPadding =

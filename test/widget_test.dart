@@ -21,7 +21,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify that the conversation shell foundation renders.
-    expect(find.text('Luma'), findsOneWidget);
-    expect(find.text('Preview shell states'), findsOneWidget);
+    expect(find.text('INVITE · PENDING'), findsOneWidget);
+    expect(find.text('Accept invite'), findsOneWidget);
   });
 }

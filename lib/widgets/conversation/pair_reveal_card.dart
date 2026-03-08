@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/date_time_formatter.dart';
 import '../../models/match_detail.dart';
 import '../../strings.dart';
-import '../shared/action_button_bar.dart';
-import '../shared/conversation_card.dart';
-import '../shared/labeled_value.dart';
+import '../../styles/dimensions.dart';
+import '../shared/pairing_ui_kit.dart';
 
 /// Displays the pair reveal state within the conversation shell.
 class PairRevealCard extends StatelessWidget {
@@ -29,34 +28,34 @@ class PairRevealCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MatchPartnerDetail? partner = matchDetail.partner;
+    final List<String> interests = partner == null || partner.sharedInterests.isEmpty
+        ? const <String>[Strings.valuePending]
+        : partner.sharedInterests;
 
-    return ConversationCard(
-      title: Strings.pairRevealTitle,
-      subtitle: Strings.pairRevealSubtitle,
-      footer: ActionButtonBar(
+    return PairingMatchCard(
+      eyebrow: '✦ YOUR MATCH',
+      name: partner?.profile.firstName ?? Strings.valuePending,
+      subtitle: partner?.profile.occupation ?? Strings.valuePending,
+      locationTitle: matchDetail.event.venue ?? Strings.valuePending,
+      locationSubtitle: DateTimeFormatter.short(matchDetail.event.scheduledDate),
+      interests: interests,
+      avatarLabel: (partner?.profile.firstName ?? 'P').substring(0, 1).toUpperCase(),
+      footer: Row(
         children: <Widget>[
-          PrimaryConversationButton(label: Strings.confirmCta, onPressed: onConfirm),
-          SecondaryConversationButton(label: Strings.declineCta, onPressed: onDecline),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          LabeledValue(label: Strings.partnerLabel, value: partner?.profile.firstName ?? Strings.valuePending),
-          LabeledValue(
-            label: Strings.occupationLabel,
-            value: partner?.profile.occupation ?? Strings.valuePending,
+          Expanded(
+            child: PairingPillButton(
+              label: Strings.confirmCta,
+              tone: PairingButtonTone.gold,
+              onPressed: onConfirm,
+            ),
           ),
-          LabeledValue(
-            label: Strings.sharedInterestsLabel,
-            value: partner == null || partner.sharedInterests.isEmpty
-                ? Strings.valuePending
-                : partner.sharedInterests.join(', '),
-          ),
-          LabeledValue(label: Strings.venueLabel, value: matchDetail.event.venue ?? Strings.valuePending),
-          LabeledValue(
-            label: Strings.whenLabel,
-            value: DateTimeFormatter.short(matchDetail.event.scheduledDate),
+          const SizedBox(width: Dimensions.md),
+          Expanded(
+            child: PairingPillButton(
+              label: Strings.declineCta,
+              tone: PairingButtonTone.outlineDark,
+              onPressed: onDecline,
+            ),
           ),
         ],
       ),

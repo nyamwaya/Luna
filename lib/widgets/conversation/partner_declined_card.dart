@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../core/date_time_formatter.dart';
 import '../../models/match_detail.dart';
 import '../../strings.dart';
-import '../shared/action_button_bar.dart';
-import '../shared/conversation_card.dart';
-import '../shared/labeled_value.dart';
+import '../../styles/app_colors.dart';
+import '../../styles/dimensions.dart';
+import '../../styles/text_styles.dart';
+import '../shared/pairing_ui_kit.dart';
 
 /// Displays the partner-declined state within the conversation shell.
 class PartnerDeclinedCard extends StatelessWidget {
@@ -27,28 +29,73 @@ class PartnerDeclinedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConversationCard(
-      title: Strings.partnerDeclined,
-      subtitle: Strings.partnerDeclinedSubtitle,
-      footer: ActionButtonBar(
-        children: <Widget>[
-          PrimaryConversationButton(label: Strings.keepMeInCta, onPressed: onKeepMeIn),
-          SecondaryConversationButton(label: Strings.skipRoundCta, onPressed: onSkip),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          LabeledValue(
-            label: Strings.partnerLabel,
-            value: matchDetail.partner?.profile.firstName ?? Strings.valuePending,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const PairingInlineBanner(
+          text: 'Match with Priya cancelled\nShe opted out of this round. This won\'t affect your flake score — you confirmed your side.',
+          icon: Icons.reply,
+          backgroundColor: AppColors.errorSurface,
+          borderColor: AppColors.errorBorder,
+          foregroundColor: AppColors.ink,
+        ),
+        const SizedBox(height: Dimensions.lg),
+        PairingPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('BACK IN THE POOL', style: AppTextStyles.eyebrow),
+              const SizedBox(height: Dimensions.md),
+              Text(
+                '${matchDetail.event.title} · ${matchDetail.circle?.name ?? Strings.valuePending}',
+                style: AppTextStyles.panelTitle,
+              ),
+              const SizedBox(height: Dimensions.xs),
+              Text(
+                DateTimeFormatter.short(matchDetail.event.scheduledDate),
+                style: AppTextStyles.body.copyWith(color: AppColors.inkSoft),
+              ),
+              const SizedBox(height: Dimensions.lg),
+              const PairingProgressBar(progress: 0.4),
+              const SizedBox(height: Dimensions.sm),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      Strings.lookingForNewPair,
+                      style: AppTextStyles.body.copyWith(color: AppColors.inkSoft),
+                    ),
+                  ),
+                  Text(
+                    Strings.unmatchedCountLabel,
+                    style: AppTextStyles.body.copyWith(color: AppColors.inkSoft),
+                  ),
+                ],
+              ),
+            ],
           ),
-          LabeledValue(
-            label: Strings.policyLabel,
-            value: matchDetail.event.cancellationPolicy ?? Strings.valuePending,
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: Dimensions.lg),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: PairingPillButton(
+                label: Strings.skipRoundCta,
+                tone: PairingButtonTone.outlineLight,
+                onPressed: onSkip,
+              ),
+            ),
+            const SizedBox(width: Dimensions.md),
+            Expanded(
+              child: PairingPillButton(
+                label: 'Keep me in →',
+                tone: PairingButtonTone.dark,
+                onPressed: onKeepMeIn,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
