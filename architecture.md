@@ -1,292 +1,888 @@
-# Architecture Guide (Portable)
-
-This document describes the **architecture patterns we use and expect** across projects. It is written to be **portable**: it should not assume any specific product domain, and it should be usable as the “follow this architecture” guide when starting a new Flutter app.
-
-## 1. High-Level Overview
-
-**Goal:** A robust, offline-first, real-time mobile application.
-**Key Characteristics:**
-*   **Feature-First Structure:** Code is organized by product features (e.g., `auth`, `profile`, `home`, `settings`) rather than technical layers.
-*   **Clean Architecture:** Strict separation between Data, Domain, and Presentation layers.
-*   **Reactive State:** State is modeled as streams / async state and propagated via Riverpod so UIs are predictable and testable.
-*   **Mobile-Only:** Optimized for iOS/Android (permissions, deep links, push, background execution where needed).
+# architecture.md — Luma
 
 ---
 
-## 2. Tech Stack & Core Packages
+## Overview
 
-This architecture is compatible with many backends; the key requirement is that **backend SDKs are kept behind the data layer**.
+Luma is a Flutter app with a Supabase backend. The UI is driven by a single conversational shell — not a traditional screen-per-route model. Almost all user-facing interactions are widgets rendered inside that shell, triggered by agent responses and backend state changes.
 
-### Core packages (expected)
-
-- **Framework**: Flutter
-- **Language**: Dart 3+
-- **State management / DI**: `flutter_riverpod`
-- **Navigation**: `go_router`
-- **Logging**: `logger` (wrapped behind our `Log` facade)
-- **Configuration**: `flutter_dotenv` (plus a typed constants facade)
-
-### Common integrations (optional; keep behind services)
-
-- **Backend SDK**: e.g. `supabase_flutter` (or Firebase, REST, GraphQL, etc.)
-- **Crash reporting**: e.g. Crashlytics (errors should flow through `Log.e`)
-- **Local persistence**: e.g. `shared_preferences`, `sqflite`
-- **Push notifications**: e.g. FCM + local notifications
-- **Media & files**: image picker, file picker, caching
+Read this file before making any structural change or starting any new feature.
 
 ---
 
-## 3. Project Structure (Feature-First)
+## Folder Structure
 
-We avoid organizing by "controllers" or "screens". Instead, we group by **Feature**.
-
-```text
+```
 lib/
-├── app.dart                   # Root widget, GoRouter config, Theme setup
-├── main.dart                  # Entry point, Service initialization
-├── styles.dart                # Design System Source of Truth (Colors, Type)
-├── core/                      # Global/Shared components
-│   ├── providers/             # Global providers (Backend client, SharedPreferences)
-│   ├── services/              # Core services (Session, Logger, Integrations)
-│   ├── utils/                 # Helpers (Formatters, Validators)
-│   └── widgets/               # Reusable atomic widgets (Buttons, TextFields)
-└── features/
-    ├── auth/                  # Feature Module (example)
-    ├── profile/               # Feature Module (example)
-    ├── home/                  # Feature Module (example)
-    ├── settings/              # Feature Module (example)
-    └── ...
+├── agent/
+│   ├── tools/                  # One file per tool definition
+│   │   ├── confirm_match_tool.dart
+│   │   ├── decline_match_tool.dart
+│   │   └── ...
+│   ├── tool_registry.dart      # Registers all tools, maps name → handler
+│   ├── agent_service.dart      # Sends messages to Claude, handles tool_use blocks
+│   └── agent_state.dart        # Conversation history, pending tool calls
+│
+├── models/
+│   ├── circle.dart
+│   ├── dinner_event.dart
+│   ├── dinner_match.dart
+│   ├── dinner_invite.dart
+│   ├── match_guest.dart
+│   ├── notification.dart
+│   └── user_profile.dart
+│
+├── repositories/
+│   ├── circle_repository.dart
+│   ├── dinner_repository.dart
+│   ├── match_repository.dart
+│   ├── notification_repository.dart
+│   └── user_repository.dart
+│
+├── services/
+│   ├── supabase_service.dart   # Supabase client singleton
+│   ├── realtime_service.dart   # All Realtime subscriptions
+│   ├── fcm_service.dart        # Firebase Cloud Messaging
+│   ├── auth_service.dart       # Auth state, sign in, sign out
+│   └── storage_service.dart    # Profile photo uploads
+│
+├── screens/
+│   ├── shell/
+│   │   ├── conversation_shell.dart        # Root shell screen
+│   │   └── conversation_shell_state.dart  # Shell state management
+│   ├── circle_detail/
+│   │   ├── circle_detail_screen.dart
+│   │   └── circle_detail_admin_screen.dart
+│   ├── profile/
+│   │   └── profile_screen.dart
+│   ├── notifications/
+│   │   └── notifications_screen.dart
+│   └── settings/
+│       └── settings_screen.dart
+│
+├── widgets/
+│   ├── conversation/           # Contextual widgets rendered in the shell feed
+│   │   ├── dinner_invite_card.dart
+│   │   ├── waiting_for_pairs_card.dart
+│   │   ├── pair_reveal_card.dart
+│   │   ├── waiting_for_partner_card.dart
+│   │   ├── partner_declined_card.dart
+│   │   ├── confirmed_dinner_card.dart
+│   │   ├── check_in_widget.dart
+│   │   ├── attendance_report_card.dart
+│   │   ├── feedback_widget.dart
+│   │   ├── circle_found_card.dart
+│   │   └── circle_preview_card.dart
+│   ├── luma_message.dart       # Agent text bubble
+│   ├── user_bubble.dart        # User text bubble
+│   ├── quick_reply_chips.dart
+│   ├── context_strip.dart      # Breadcrumb bar beneath top bar
+│   └── shared/                 # Buttons, inputs, avatars, tags, etc.
+│
+├── styles/
+│   ├── app_colors.dart
+│   ├── dimensions.dart
+│   └── text_styles.dart
+│
+├── strings.dart                # All user-facing text
+├── router.dart                 # Named routes for true screens only
+└── main.dart
 ```
 
-### Standard feature module layout
+---
 
-Each feature follows Clean Architecture boundaries:
+## Layered Architecture
 
-```text
-features/<feature_name>/
-├── data/
-│   ├── models/                # DTOs / serialization
-│   └── repositories/          # Implementations (call backend SDK)
-├── domain/
-│   ├── entities/              # Pure Dart types
-│   ├── repositories/          # Repository interfaces (contracts)
-│   └── usecases/              # Single-purpose business actions
-└── presentation/
-    └── providers/             # Riverpod providers/notifiers for UI state
+Every feature follows the same four-layer pattern. Do not skip layers or call Supabase directly from a screen or widget.
+
+```
+Screen / Widget
+      ↓
+  Repository          ← data access, Supabase calls, RPC calls
+      ↓
+    Model             ← typed, null-safe data classes
+      ↓
+  Supabase / API
+```
+
+The `service` layer sits alongside repositories for cross-cutting concerns (auth, FCM, Realtime, storage). It does not hold business logic.
+
+---
+
+## Models
+
+Every model is a plain Dart class with:
+- Named, required constructor
+- `fromJson(Map<String, dynamic> json)` factory
+- `toJson()` method
+- `copyWith()` method
+- All fields explicitly typed and null-safe
+
+### Example
+
+```dart
+// lib/models/dinner_match.dart
+
+class DinnerMatch {
+  final String id;
+  final String dinnerEventId;
+  final MatchStatus status;
+  final DateTime? revealAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const DinnerMatch({
+    required this.id,
+    required this.dinnerEventId,
+    required this.status,
+    this.revealAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory DinnerMatch.fromJson(Map<String, dynamic> json) {
+    return DinnerMatch(
+      id: json['id'] as String,
+      dinnerEventId: json['dinner_event_id'] as String,
+      status: MatchStatus.fromString(json['status'] as String),
+      revealAt: json['reveal_at'] != null
+          ? DateTime.parse(json['reveal_at'] as String)
+          : null,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'dinner_event_id': dinnerEventId,
+    'status': status.value,
+    'reveal_at': revealAt?.toIso8601String(),
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
+
+  DinnerMatch copyWith({
+    String? id,
+    String? dinnerEventId,
+    MatchStatus? status,
+    DateTime? revealAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return DinnerMatch(
+      id: id ?? this.id,
+      dinnerEventId: dinnerEventId ?? this.dinnerEventId,
+      status: status ?? this.status,
+      revealAt: revealAt ?? this.revealAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+enum MatchStatus {
+  pending('pending'),
+  revealed('revealed'),
+  confirmed('confirmed'),
+  completed('completed'),
+  expired('expired'),
+  cancelled('cancelled');
+
+  final String value;
+  const MatchStatus(this.value);
+
+  static MatchStatus fromString(String value) {
+    return MatchStatus.values.firstWhere(
+      (s) => s.value == value,
+      orElse: () => throw ArgumentError('Unknown MatchStatus: $value'),
+    );
+  }
+}
 ```
 
 ---
 
-## 4. Architectural Patterns
+## Repositories
 
-### A. Clean Architecture & The Resource Pattern
-We use a **unidirectional data flow** with strict boundary checks.
+Repositories own all data access. They call Supabase RPCs or table queries, parse the response into models, and return a typed `Result`.
 
-1.  **Domain Layer (The "What"):**
-    *   **Entities:** Pure Dart classes (e.g., `UserEntity`). Immutable.
-    *   **Repositories (Interfaces):** Contracts defining what data operations exist (e.g., `AuthRepository`).
-    *   **Use Cases:** Single-responsibility classes that encapsulate business logic (e.g., `SignInUseCase`).
-    *   **No external dependencies:** This layer knows nothing about Supabase or Flutter UI.
+### Result type
 
-2.  **Data Layer (The "How"):**
-    *   **DTOs (Data Transfer Objects):** Serialization logic (`fromJson`/`toJson`). Maps Supabase JSON to Domain Entities.
-    *   **Repository Implementations:** Concrete classes (e.g., `SupaAuthRepository`) that call external APIs (Supabase) and handle exceptions.
-    *   **Return Type:** Data operations return a small, explicit result type (e.g. a sealed `Resource<T>` with `Success` / `Error`). Loading is typically modeled in presentation using Riverpod’s async state.
+All repository methods return a `Result<T>` — never throw directly to the UI.
 
-3.  **Presentation Layer (The "Show"):**
-    *   **Providers:** Riverpod Notifiers that consume Use Cases.
-    *   **Widgets:** UI components that `watch` providers and rebuild on state changes.
+```dart
+// lib/core/result.dart
 
-### B. AppSession Pattern (User State)
-Instead of fetching the user profile in every widget, we use a centralized **Session Service**.
+sealed class Result<T> {
+  const Result();
+}
 
-*   **`AppUser`:** A presentation-layer composite model that flattens domain entities into a UI-ready object.
-*   **`AppSessionService`:** A Singleton service (BehaviorSubject) that broadcasts the current `AppUser`.
-*   **Flow:**
-    1.  Auth changes -> Repository updates.
-    2.  `AppSessionService` listens to auth stream.
-    3.  Service emits new `AppUser`.
-    4.  Entire app updates by watching session providers (e.g., a `currentUserStreamProvider`).
+class Success<T> extends Result<T> {
+  final T data;
+  const Success(this.data);
+}
 
-### C. Repository Pattern (Backend behind the data layer)
-We abstract the backend SDK behind repositories to allow for future backend swaps and easier testing.
+class Failure<T> extends Result<T> {
+  final String message;
+  final Object? error;
+  const Failure(this.message, {this.error});
+}
+```
 
-*   **Rule:** UI never imports backend SDKs directly. UI calls use cases / repositories via Riverpod providers.
+### Example repository
 
----
+```dart
+// lib/repositories/match_repository.dart
 
-## 5. Architecture Rules (Non-Negotiable)
+class MatchRepository {
+  final SupabaseClient _client;
 
-### A. Dependency boundaries
+  MatchRepository(this._client);
 
-- **Presentation** may depend on:
-  - Domain
-  - Core (widgets, utils, services facades)
-- **Domain** may depend on:
-  - Domain only (no Flutter, no backend SDK)
-- **Data** may depend on:
-  - Domain
-  - Backend SDKs (Supabase/Firebase/HTTP)
-  - Core utilities (e.g., `Log`)
+  Future<Result<DinnerMatch>> confirmMatchGuest({
+    required String matchId,
+    required String userId,
+  }) async {
+    try {
+      final response = await _client.rpc('confirm_match_guest', params: {
+        'p_match_id': matchId,
+        'p_user_id': userId,
+      });
 
-### B. State management conventions
+      if (response['error'] != null) {
+        return Failure(response['error'] as String);
+      }
 
-- **Riverpod is the DI mechanism**.
-- Prefer keeping state changes inside notifiers/providers, not inside widgets.
-- Keep providers small and focused; avoid “god providers”.
+      final match = await _getMatch(matchId);
+      return Success(match);
+    } catch (e) {
+      AppLogger.error('confirmMatchGuest failed', error: e);
+      return Failure('Failed to confirm match', error: e);
+    }
+  }
 
-### C. Strings & localization conventions
+  Future<Result<MatchDetail>> getMatchDetail({
+    required String matchId,
+    required String viewerUserId,
+  }) async {
+    try {
+      final response = await _client.rpc('get_match_detail', params: {
+        'p_match_id': matchId,
+        'p_viewer_user_id': viewerUserId,
+      });
 
-- Do not hardcode user-facing strings directly in widgets.
-- Route strings through a single source of truth.
-  - In this codebase that is a centralized `AppStrings` class in `core/localization/`.
-  - In other apps this may be an ARB + generated `S.of(context)` flow.
+      return Success(MatchDetail.fromJson(response as Map<String, dynamic>));
+    } catch (e) {
+      AppLogger.error('getMatchDetail failed', error: e);
+      return Failure('Failed to load match detail', error: e);
+    }
+  }
+}
+```
 
-### D. Networking conventions
-
-- Keep networking inside the data layer.
-- If the app uses raw HTTP (REST/GraphQL), standardize on one client and do not call it from widgets.
-- For backend SDKs (e.g., Supabase/Firebase), provide the client via `core/providers/` and consume it only from repositories/services.
-
-### E. Error handling conventions
-
-- Convert low-level exceptions into **typed results** (e.g., `Resource.error(message, stackTrace: ...)`).
-- UI displays **user-friendly** error messages (never raw stack traces).
-- Always propagate stack traces through logs for debugging.
-
-### F. Code organization & reuse
-
-- Prefer small, focused files and classes.
-- Reuse components via `core/widgets/` instead of duplicating UI.
-- Keep cross-cutting concerns (logging, analytics, crash reporting, session, push, messaging) behind `core/services/` facades.
-
-### G. Documentation
-
-- Every public class, method, and module should be documented.
-- Treat this document as the “contract” for how new code should be structured.
-
-### H. Animation & motion policy
-
-- Prefer **subtle motion** that supports comprehension (state change confirmation, navigation continuity, loading feedback), not decoration.
-- Standardize on a single animation approach for common UI polish:
-  - Use `flutter_animate` for simple, composable micro-interactions (fade/slide/scale).
-  - Use implicit animations (`AnimatedContainer`, `AnimatedOpacity`, etc.) when they are sufficient.
-- Keep animations **fast and consistent**:
-  - Default durations: 150–250ms for micro-interactions.
-  - Use easing curves consistently (avoid random curves per screen).
-- Respect accessibility:
-  - Avoid motion that could be disorienting.
-  - Provide a way to reduce/disable non-essential animations if the platform/user setting requires it.
-- Performance rules:
-  - Avoid animating large, expensive widgets when possible.
-  - Prefer animating opacity/transform over layout-affecting properties.
-  - Do not start long-running animations inside hot rebuild paths.
+### Rules
+- One repository per domain (circles, matches, dinners, users, notifications)
+- Never call `_client` from a widget or screen directly
+- Always log errors with `AppLogger` before returning `Failure`
+- Never return null — use `Result<T>` or `Result<T?>` explicitly
 
 ---
-
-## 6. Key Systems
-
-### A. Navigation (GoRouter)
-*   **Routing:** Centralized in `lib/app.dart`.
-*   **Deep linking:** Use path parameters for inbound links (e.g., `/invite/:code` becomes `/referral/:code` in another app).
-*   **Auth gating:** Gate access by observing session/auth state and redirecting to the appropriate entry route.
-
-### B. Logging System
-*   **No prints:** prefer `Log` (the app-wide logging facade).
-*   **`Log` facade:** wraps `logger` and centralizes formatting + crash reporting integration.
-*   **Riverpod observer:** a global `ProviderObserver` logs provider lifecycle + failures.
-
-### C. Design System
-*   **Source of Truth:** `lib/styles.dart`.
-*   **Usage:** We do not hardcode colors/fonts. We use `AppColors.primary`, `AppTextStyles.header1`, etc.
-*   **Theme:** Custom `ThemeData` is built from these constants and applied at the root `MaterialApp`.
-
-### D. Configuration & secrets
-
-*   Load environment variables via `flutter_dotenv`.
-*   Access env values through a typed facade (e.g., `AppConstants`) rather than sprinkling `dotenv.env[...]` across the app.
-*   Never hardcode secrets in source.
-
-### E. Session lifecycle (sign-in / sign-out)
-
-*   Keep “session cleanup” centralized in a single service.
-*   On sign-out:
-    - disconnect external SDK sessions
-    - clear in-memory session (`AppSessionService.clearSession()`)
-    - clear persisted caches when appropriate
-
----
-
-## 7. Development Workflow (Porting Guide)
 
 ## Conversation Shell
 
-The core UI pattern in Luma is a single persistent conversation shell. It is not a chat app — it is an agent-driven interface where Luma injects contextual widgets into a scrollable feed in response to user actions and backend state changes.
+The shell is the root screen for all agent-driven flows. It owns the conversation feed and decides which contextual widget to render based on the current `ShellState`.
 
-### Structure
+### Shell state
+
+```dart
+// lib/screens/shell/conversation_shell_state.dart
+
+enum ShellWidget {
+  none,
+  dinnerInvite,
+  waitingForPairs,
+  pairReveal,
+  waitingForPartner,
+  partnerDeclined,
+  confirmedDinner,
+  checkIn,
+  attendanceReport,
+  feedback,
+  circleFound,
+  circlePreview,
+}
+
+class ShellState {
+  final List<ConversationMessage> messages;
+  final ShellWidget activeWidget;
+  final Map<String, dynamic> widgetData;
+  final bool isLoading;
+
+  const ShellState({
+    this.messages = const [],
+    this.activeWidget = ShellWidget.none,
+    this.widgetData = const {},
+    this.isLoading = false,
+  });
+
+  ShellState copyWith({ ... });
+}
 ```
-ConversationShell
-├── TopBar (avatar, city selector, notification bell)
-├── ScrollableFeed
-│   ├── ContextStrip (breadcrumb of recent action)
-│   ├── LumaMessage (agent text bubble)
-│   ├── ContextualWidget (state-driven — see below)
-│   ├── LumaMessage
-│   └── QuickReplyChips (optional)
-└── InputBar (text input + send button)
+
+### Widget resolver
+
+The shell contains a single `_resolveWidget()` method. All widget-to-state mapping lives here and nowhere else.
+
+```dart
+Widget _resolveWidget(ShellState state) {
+  switch (state.activeWidget) {
+    case ShellWidget.dinnerInvite:
+      return DinnerInviteCard(
+        invite: DinnerInvite.fromJson(state.widgetData),
+        onAccept: _handleAcceptInvite,
+        onDecline: _handleDeclineInvite,
+      );
+    case ShellWidget.pairReveal:
+      return PairRevealCard(
+        matchDetail: MatchDetail.fromJson(state.widgetData),
+        onConfirm: _handleConfirmMatch,
+        onDecline: _handleDeclineMatch,
+      );
+    case ShellWidget.confirmedDinner:
+      return ConfirmedDinnerCard(
+        matchDetail: MatchDetail.fromJson(state.widgetData),
+        onAddToCalendar: _handleAddToCalendar,
+        onCheckIn: _handleCheckIn,
+        onCancel: _handleLateCancel,
+      );
+    // ... all other cases
+    case ShellWidget.none:
+      return const SizedBox.shrink();
+  }
+}
 ```
-
-### Contextual Widgets
-
-Each widget maps to a specific state in the dinner or pairing lifecycle. The shell does not navigate — it rebuilds the feed with the appropriate widget when state changes.
-
-| Widget | State that triggers it |
-|--------|----------------------|
-| `DinnerInviteCard` | `dinner_invite` notification received |
-| `WaitingForPairsCard` | Invite accepted, no match yet |
-| `PairRevealCard` | `now() >= reveal_at` and match status is `revealed` |
-| `WaitingForPartnerCard` | Current user confirmed, partner has not |
-| `PartnerDeclinedCard` | Partner's `declined_at` is set |
-| `ConfirmedDinnerCard` | Match status is `confirmed` |
-| `CheckInWidget` | Within check-in window on dinner day |
-| `AttendanceReportCard` | After `scheduled_date`, within `reporting_deadline` |
-| `FeedbackWidget` | After `attended = true` is reported |
-| `CircleFoundCard` | Invite code resolved successfully |
-| `CirclePreviewCard` | Circle creation wizard complete, awaiting confirm |
-
-### State Management
-
-Each contextual widget is driven by its own state class. The shell observes:
-- Supabase Realtime subscriptions (match confirmation, partner check-in, notifications)
-- Local app state (current flow, last action taken)
-- Notification routing (deep links from FCM push taps resolve to a widget state, not a route)
-
-### Adding a New Contextual Widget
-
-1. Create the widget in `lib/widgets/conversation/`
-2. Define the state that triggers it
-3. Register it in the shell's state resolver
-4. Wire up any Realtime subscription or notification type that should trigger it
-5. Do not create a new route — the shell handles display
-
-### Navigation
-
-Only route to a new screen when the user is navigating somewhere independently of agent flow. Use the shell for everything Luma initiates or responds to.
-
-To port this architecture to a new project:
-
-1.  **Create the skeleton:** `main.dart`, `app.dart`, `styles.dart`, `core/`, `features/`.
-2.  **Wire Riverpod:** Wrap `runApp` with `ProviderScope` and register the global `ProviderObserver`.
-3.  **Add config:** `.env` + a typed constants facade.
-4.  **Add session:** `AppUser` + `AppSessionService` + session providers.
-5.  **Build one feature end-to-end:** e.g., `auth` or `profile` (domain contracts -> data impl -> presentation providers -> screens).
-6.  **Add integrations behind services:** crash reporting, backend SDK, messaging, push, etc.
 
 ---
 
-## 8. Self-critique (of this document)
+## Agent Tool Layer
 
-- This guide is intentionally **prescriptive** and may be stricter than some parts of the current codebase.
-- Some existing files may still contain legacy patterns (e.g., occasional `print()` usage). Treat the rules above as the target standard when porting.
-- If the new app does not use Supabase, the same boundaries still apply: keep the backend client in `core/providers/` and all external calls inside the data layer.
-- The animation section specifies policy and preferred tooling (`flutter_animate`) but does not define a full motion system (tokens/curves) for every component; that should be defined per product design system.
+The Luma agent (Claude) drives the conversation. When the agent needs to take an action or load data, it returns a `tool_use` block. The app handles this by calling the appropriate repository method and either returning the result to the agent or directly updating the shell state.
+
+### Tool definition shape
+
+Every tool lives in `lib/agent/tools/` as its own file.
+
+```dart
+// lib/agent/tools/confirm_match_tool.dart
+
+class ConfirmMatchTool {
+  static const name = 'confirm_match_guest';
+
+  static Map<String, dynamic> get definition => {
+    'name': name,
+    'description': 'Confirms that the current user will attend their paired dinner match.',
+    'input_schema': {
+      'type': 'object',
+      'properties': {
+        'match_id': {
+          'type': 'string',
+          'description': 'The UUID of the dinner match to confirm.',
+        },
+        'user_id': {
+          'type': 'string',
+          'description': 'The UUID of the user confirming attendance.',
+        },
+      },
+      'required': ['match_id', 'user_id'],
+    },
+  };
+
+  static Future<Map<String, dynamic>> handle(
+    Map<String, dynamic> input,
+    MatchRepository matchRepository,
+  ) async {
+    final result = await matchRepository.confirmMatchGuest(
+      matchId: input['match_id'] as String,
+      userId: input['user_id'] as String,
+    );
+
+    return switch (result) {
+      Success(data: final match) => {
+        'success': true,
+        'match_status': match.status.value,
+      },
+      Failure(message: final msg) => {
+        'success': false,
+        'error': msg,
+      },
+    };
+  }
+}
+```
+
+### Tool registry
+
+```dart
+// lib/agent/tool_registry.dart
+
+class ToolRegistry {
+  static List<Map<String, dynamic>> get definitions => [
+    ConfirmMatchTool.definition,
+    DeclineMatchTool.definition,
+    GetMatchDetailTool.definition,
+    RespondToInviteTool.definition,
+    CheckInTool.definition,
+    ReportAttendanceTool.definition,
+    SubmitFeedbackTool.definition,
+    GetCircleDetailTool.definition,
+    JoinCircleTool.definition,
+    // ...
+  ];
+
+  static Future<Map<String, dynamic>> handle(
+    String toolName,
+    Map<String, dynamic> input,
+    RepositoryLocator repositories,
+  ) async {
+    return switch (toolName) {
+      ConfirmMatchTool.name     => ConfirmMatchTool.handle(input, repositories.match),
+      DeclineMatchTool.name     => DeclineMatchTool.handle(input, repositories.match),
+      GetMatchDetailTool.name   => GetMatchDetailTool.handle(input, repositories.match),
+      RespondToInviteTool.name  => RespondToInviteTool.handle(input, repositories.dinner),
+      CheckInTool.name          => CheckInTool.handle(input, repositories.match),
+      ReportAttendanceTool.name => ReportAttendanceTool.handle(input, repositories.match),
+      SubmitFeedbackTool.name   => SubmitFeedbackTool.handle(input, repositories.dinner),
+      JoinCircleTool.name       => JoinCircleTool.handle(input, repositories.circle),
+      _ => {'error': 'Unknown tool: $toolName'},
+    };
+  }
+}
+```
+
+### Agent service — request/response cycle
+
+```dart
+// lib/agent/agent_service.dart
+
+class AgentService {
+  final AnthropicClient _anthropic;
+  final ToolRegistry _registry;
+  final RepositoryLocator _repositories;
+
+  // Send a user message and process the full agent response including
+  // any tool_use blocks. Returns the final text response and optional
+  // shell widget transition instruction.
+  Future<AgentResponse> sendMessage({
+    required String userMessage,
+    required List<ConversationMessage> history,
+    Map<String, dynamic>? context,
+  }) async {
+    final messages = [
+      ...history.map((m) => m.toApiMap()),
+      {'role': 'user', 'content': userMessage},
+    ];
+
+    var response = await _anthropic.messages(
+      model: 'claude-sonnet-4-20250514',
+      maxTokens: 1000,
+      tools: ToolRegistry.definitions,
+      messages: messages,
+    );
+
+    // Agentic loop — keep running until stop_reason is 'end_turn'
+    while (response.stopReason == 'tool_use') {
+      final toolUseBlocks = response.content
+          .where((b) => b.type == 'tool_use')
+          .toList();
+
+      final toolResults = <Map<String, dynamic>>[];
+
+      for (final block in toolUseBlocks) {
+        final result = await ToolRegistry.handle(
+          block.name,
+          block.input,
+          _repositories,
+        );
+
+        toolResults.add({
+          'type': 'tool_result',
+          'tool_use_id': block.id,
+          'content': jsonEncode(result),
+        });
+      }
+
+      // Append assistant turn + tool results and continue
+      messages.add({'role': 'assistant', 'content': response.content});
+      messages.add({'role': 'user', 'content': toolResults});
+
+      response = await _anthropic.messages(
+        model: 'claude-sonnet-4-20250514',
+        maxTokens: 1000,
+        tools: ToolRegistry.definitions,
+        messages: messages,
+      );
+    }
+
+    // Extract text and any widget transition from final response
+    return AgentResponse.fromApiResponse(response);
+  }
+}
+```
+
+### Widget transitions from agent
+
+Some tool results carry enough information to update the shell widget directly — the agent does not need to explicitly instruct a transition. The shell observes the result and transitions automatically.
+
+```dart
+// lib/agent/agent_response.dart
+
+class AgentResponse {
+  final String text;
+  final ShellWidget? widgetTransition;
+  final Map<String, dynamic>? widgetData;
+
+  const AgentResponse({
+    required this.text,
+    this.widgetTransition,
+    this.widgetData,
+  });
+}
+```
+
+**Rule:** Tool handlers that return data sufficient to render a widget set `widgetTransition` on the response. The shell reads this and calls `_resolveWidget()`. The agent text becomes the Luma message that appears above the widget.
+
+Example: `GetMatchDetailTool` returns a `MatchDetail` with `status = revealed`. The shell sees this, sets `activeWidget = ShellWidget.pairReveal`, and renders `PairRevealCard` beneath the Luma message.
+
+---
+
+## Realtime Subscriptions
+
+All Realtime subscriptions are owned by `RealtimeService`. Screens and widgets never subscribe directly.
+
+### Convention
+
+```dart
+// lib/services/realtime_service.dart
+
+class RealtimeService {
+  final SupabaseClient _client;
+  final Map<String, RealtimeChannel> _channels = {};
+
+  // Subscribe to partner confirmation changes for a given match
+  void subscribeToMatchGuests({
+    required String matchId,
+    required void Function(MatchGuestUpdate) onUpdate,
+  }) {
+    final channelKey = 'match_guests_$matchId';
+    if (_channels.containsKey(channelKey)) return;
+
+    final channel = _client
+        .channel(channelKey)
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'dinner_match_guests',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'match_id',
+            value: matchId,
+          ),
+          callback: (payload) {
+            final update = MatchGuestUpdate.fromPayload(payload);
+            onUpdate(update);
+          },
+        )
+        .subscribe();
+
+    _channels[channelKey] = channel;
+  }
+
+  // Always unsubscribe when the widget or screen is disposed
+  void unsubscribe(String channelKey) {
+    _channels[channelKey]?.unsubscribe();
+    _channels.remove(channelKey);
+  }
+
+  void dispose() {
+    for (final channel in _channels.values) {
+      channel.unsubscribe();
+    }
+    _channels.clear();
+  }
+}
+```
+
+### Active subscriptions
+
+| Channel key | Table | Trigger |
+|-------------|-------|---------|
+| `match_guests_{matchId}` | `dinner_match_guests` | Partner confirms or declines |
+| `check_ins_{matchId}` | `dinner_check_ins` | Partner checks in |
+| `notifications_{userId}` | `notifications` | New notification arrives |
+
+### Rules
+- Subscribe in the shell or screen `initState`, unsubscribe in `dispose`
+- Never subscribe inside a `build` method
+- Use the `channelKey` pattern to prevent duplicate subscriptions
+- `RealtimeService.dispose()` is called when the shell unmounts
+
+---
+
+## Styles
+
+All visual constants live in the style files. Never write inline values.
+
+### app_colors.dart
+
+```dart
+// lib/styles/app_colors.dart
+
+class AppColors {
+  // Base
+  static const Color ink        = Color(0xFF1A1714);
+  static const Color inkSoft    = Color(0xFF6B6560);
+  static const Color inkFaint   = Color(0xFFB0A89E);
+  static const Color cream      = Color(0xFFF2EDE6);
+  static const Color creamDark  = Color(0xFFE8E1D8);
+  static const Color white      = Color(0xFFFDFAF6);
+
+  // Accent
+  static const Color gold       = Color(0xFFB8976A);
+  static const Color goldLight  = Color(0xFFD4B48A);
+
+  // Semantic
+  static const Color success    = Color(0xFF3D6B4F);
+  static const Color error      = Color(0xFFC4513A);
+}
+```
+
+### dimensions.dart
+
+```dart
+// lib/styles/dimensions.dart
+
+class Dimensions {
+  // Spacing
+  static const double xs   = 4.0;
+  static const double sm   = 8.0;
+  static const double md   = 16.0;
+  static const double lg   = 24.0;
+  static const double xl   = 32.0;
+  static const double xxl  = 48.0;
+
+  // Border radius
+  static const double radiusSm  = 10.0;
+  static const double radiusMd  = 16.0;
+  static const double radiusLg  = 20.0;
+  static const double radiusFull = 999.0;
+
+  // Avatar sizes
+  static const double avatarSm  = 28.0;
+  static const double avatarMd  = 42.0;
+  static const double avatarLg  = 52.0;
+
+  // Card padding
+  static const EdgeInsets cardPadding =
+      EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0);
+
+  // Screen horizontal padding
+  static const EdgeInsets screenPadding =
+      EdgeInsets.symmetric(horizontal: 16.0);
+}
+```
+
+### ❌ Wrong — never do this
+
+```dart
+Container(
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: const Color(0xFFB8976A),
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Text(
+    'Confirm',
+    style: TextStyle(
+      fontSize: 14,
+      color: Colors.white,
+    ),
+  ),
+)
+```
+
+### ✅ Correct
+
+```dart
+Container(
+  padding: Dimensions.cardPadding,
+  decoration: BoxDecoration(
+    color: AppColors.gold,
+    borderRadius: BorderRadius.circular(Dimensions.radiusLg),
+  ),
+  child: Text(
+    Strings.confirmCta,
+    style: AppTextStyles.buttonPrimary,
+  ),
+)
+```
+
+---
+
+## Strings
+
+All user-facing text lives in `strings.dart`. Never write text inline in a widget.
+
+```dart
+// lib/strings.dart
+
+class Strings {
+  // Pairing flow
+  static const String pairRevealTitle     = 'Your dinner partner is here.';
+  static const String pairRevealSubtitle  = 'Confirm to lock it in.';
+  static const String confirmCta          = "Confirm I'll be there";
+  static const String declineCta          = "Can't make it";
+  static const String waitingForPartner   = 'Waiting for your partner to confirm.';
+  static const String partnerDeclined     = "Your dinner partner can't make it this time.";
+  static const String requeuedMessage     = "You've been re-added to the pool.";
+
+  // Attendance
+  static const String attendancePrompt    = 'Did you make it to dinner?';
+  static const String attendedYes         = 'Yes, I went';
+  static const String attendedNo          = "Couldn't make it";
+  static const String flakeWarning        = 'Reporting a no-show will affect your reliability score.';
+
+  // Feedback
+  static const String feedbackPrompt      = 'How was the dinner?';
+  static const String feedbackSubmitCta   = 'Submit feedback';
+  static const String feedbackPhotoPrompt = 'Add a photo to circle memories?';
+
+  // Circles
+  static const String circleFoundTitle    = 'Found it. Want to join?';
+  static const String joinCircleCta       = 'Join this circle →';
+  static const String notNowCta           = 'Not now';
+  static const String createCircleCta     = 'Create Circle →';
+  static const String copyCodeCta         = 'Copy Code';
+  static const String shareBadgeCta       = 'Share Badge ↗';
+}
+```
+
+### ❌ Wrong
+
+```dart
+Text("Your dinner partner can't make it this time.")
+```
+
+### ✅ Correct
+
+```dart
+Text(Strings.partnerDeclined)
+```
+
+---
+
+## Logging
+
+Never use `debugPrint`. Always use `AppLogger`.
+
+```dart
+// Usage examples
+
+AppLogger.info('Match confirmed', data: {'matchId': matchId});
+AppLogger.warning('Reveal_at is null for match', data: {'matchId': matchId});
+AppLogger.error('Failed to confirm match', error: e, stackTrace: st);
+```
+
+### ❌ Wrong
+
+```dart
+debugPrint('Match confirmed: $matchId');
+print('error: $e');
+```
+
+### ✅ Correct
+
+```dart
+AppLogger.info('Match confirmed', data: {'matchId': matchId});
+AppLogger.error('Failed to confirm match', error: e);
+```
+
+---
+
+## Error Handling
+
+- Repository methods return `Result<T>` — never throw to the UI layer
+- Widgets switch on `Result` and show appropriate UI for `Failure` cases
+- All `catch` blocks log via `AppLogger` before returning `Failure`
+- Never swallow errors silently
+
+```dart
+// In a widget / shell handler
+final result = await _matchRepository.confirmMatchGuest(
+  matchId: matchId,
+  userId: userId,
+);
+
+switch (result) {
+  case Success(data: final match):
+    // update shell state
+  case Failure(message: final msg):
+    // show Luma error message in feed
+    AppLogger.error('Confirm match failed', error: msg);
+}
+```
+
+---
+
+## Routing
+
+Only true screens have named routes. Pairing flow states, dinner flow states, and any widget injected by the agent are **not** routes.
+
+```dart
+// lib/router.dart
+
+class AppRouter {
+  static const String shell            = '/';
+  static const String circleDetail     = '/circle';
+  static const String circleDetailAdmin = '/circle/admin';
+  static const String profile          = '/profile';
+  static const String notifications    = '/notifications';
+  static const String settings         = '/settings';
+}
+```
+
+Deep links from FCM push notifications resolve to a **shell state**, not a route. The notification router parses the `notification_type` and `data` payload, sets the appropriate `ShellWidget` and `widgetData`, and navigates to the shell — which renders the correct widget immediately on arrival.
+
+```dart
+// lib/services/fcm_service.dart
+
+ShellWidgetConfig? resolveNotification(RemoteMessage message) {
+  final type = message.data['notification_type'] as String?;
+  final data = message.data;
+
+  return switch (type) {
+    'dinner_invite'    => ShellWidgetConfig(ShellWidget.dinnerInvite,    data),
+    'dinner_paired'    => ShellWidgetConfig(ShellWidget.pairReveal,      data),
+    'match_confirmed'  => ShellWidgetConfig(ShellWidget.confirmedDinner, data),
+    'match_cancelled'  => ShellWidgetConfig(ShellWidget.partnerDeclined, data),
+    'attendance_reminder' => ShellWidgetConfig(ShellWidget.attendanceReport, data),
+    'feedback_prompt'  => ShellWidgetConfig(ShellWidget.feedback,        data),
+    _                  => null,
+  };
+}
+```
+
+---
+
+## Adding a New Feature — Checklist
+
+1. Read `architecture.md` and `agents.md` before writing anything
+2. Create the model in `lib/models/`
+3. Create or extend the repository in `lib/repositories/`
+4. If agent-callable, create the tool in `lib/agent/tools/` and register it in `tool_registry.dart`
+5. If it renders a widget in the shell, add the widget to `lib/widgets/conversation/`, add the `ShellWidget` enum value, and add the case to `_resolveWidget()`
+6. If it needs a Realtime subscription, add it to `realtime_service.dart`
+7. Add all new strings to `strings.dart`
+8. Add all new colors or dimensions to the style files
+9. Reference mockups in `mockups/` before building any UI
+10. Update `feature_list.md` and `progress.txt` when done
