@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/app_logger.dart';
+import 'services/convex_service.dart';
 import 'router.dart';
 import 'styles/app_colors.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (error, stackTrace) {
+    AppLogger.warning(
+      'Failed to load .env file',
+      data: <String, Object?>{'error': error.toString(), 'stackTrace': stackTrace.toString()},
+    );
+  }
+
+  try {
+    await ConvexService.initializeFromEnv();
+  } catch (error, stackTrace) {
+    AppLogger.error(
+      'Convex initialization failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
   runApp(
     const ProviderScope(
       child: LumaApp(),
