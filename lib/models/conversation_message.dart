@@ -62,13 +62,17 @@ class ConversationMessage {
 
   /// Creates a message from serialized JSON.
   factory ConversationMessage.fromJson(Map<String, dynamic> json) {
+    final Object? rawId = json['id'] ?? json['_id'];
+    final Object? rawText = json['text'] ?? json['content'];
+    final Object? rawCreatedAt = json['created_at'] ?? json['createdAt'];
+
     return ConversationMessage(
-      id: json['id'] as String? ?? _defaultMessageId(),
-      text: json['text'] as String? ?? '',
+      id: rawId?.toString() ?? _defaultMessageId(),
+      text: rawText?.toString() ?? '',
       author: ConversationAuthor.fromString(
         json['author'] as String? ?? ConversationAuthor.luma.value,
       ),
-      createdAt: _parseDateTime(json['created_at']) ?? DateTime.now(),
+      createdAt: _parseDateTime(rawCreatedAt) ?? DateTime.now(),
       metadata: Map<String, dynamic>.from(
         (json['metadata'] as Map?) ?? const <String, dynamic>{},
       ),
@@ -126,6 +130,10 @@ String _defaultMessageId() {
 DateTime? _parseDateTime(Object? value) {
   if (value is String && value.isNotEmpty) {
     return DateTime.tryParse(value);
+  }
+
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value);
   }
 
   return null;

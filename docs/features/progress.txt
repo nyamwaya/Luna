@@ -31,3 +31,11 @@
 - Updated shell top chrome, header/notification/composer behavior, and action handlers to render home as the default state and support state switching
 - Added home-specific tokens in strings, colors, dimensions, and text styles to match the provided home mockup structure
 - Verified the integration with flutter analyze (no analyzer issues)
+
+[2026-03-08] Added Convex realtime conversation and initial LLM action vertical slice.
+- Upgraded Flutter/Dart compatibility for latest convex_flutter and integrated Convex app bootstrap in main.dart via ConvexService
+- Added Convex environment and platform setup updates (.env.example, Android INTERNET permission, macOS network entitlements)
+- Created Convex backend scaffold (package.json, tsconfig.json, schema.ts, health.ts, messages.ts, llm.ts) with conversations/messages tables and realtime query/mutation/action contracts
+- Wired ConversationShell to Convex-backed ConversationRepository for live message subscription and send->LLM-reply flow
+- Updated ConversationMessage parsing for Convex payload shapes and added user-facing realtime failure strings
+- Verified with flutter analyze and convex function readiness (npx convex dev --once)

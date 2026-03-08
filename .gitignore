@@ -20,3 +20,5 @@ macos/Pods/
 *.iml
 .idea/
 .vscode/
+.env.local
+node_modules/

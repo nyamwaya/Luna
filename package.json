@@ -1,0 +1,11 @@
+{
+  "name": "luna-convex-backend",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.25.4"
+  }
+}

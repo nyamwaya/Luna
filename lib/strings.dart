@@ -51,6 +51,10 @@ class Strings {
   static const String addNotePlaceholder = 'Add a note about the evening...';
   static const String homeComposerPlaceholder =
       'Set my availability for next week...';
+  static const String realtimeConnectionIssueMessage =
+      'I hit a realtime sync issue. Try sending again in a moment.';
+  static const String sendMessageFailedMessage =
+      'I could not process that right now. Please try again.';
 
   // Home dashboard
   static const String homePrimaryMessage =

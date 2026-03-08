@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_logger.dart';
 import '../../models/conversation_message.dart';
 import '../../models/home/home_dashboard_view.dart';
+import '../../repositories/conversation_repository.dart';
 import '../../strings.dart';
 import '../../styles/app_colors.dart';
 import '../../styles/dimensions.dart';
@@ -23,19 +25,23 @@ class ConversationShell extends ConsumerStatefulWidget {
 
 class _ConversationShellState extends ConsumerState<ConversationShell> {
   late final TextEditingController _composerController;
+  late final ConversationRepository _conversationRepository;
+  dynamic _messagesSubscription;
 
   @override
   void initState() {
     super.initState();
     _composerController = TextEditingController();
+    _conversationRepository = ConversationRepository();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _activatePreview(ShellWidget.homeDashboard);
+      _initializeRealtimeConversation();
     });
   }
 
   @override
   void dispose() {
+    _messagesSubscription?.cancel();
     _composerController.dispose();
     super.dispose();
   }
@@ -262,14 +268,80 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     );
   }
 
-  void _handleSend() {
+  Future<void> _initializeRealtimeConversation() async {
+    final ConversationShellController controller =
+        ref.read(conversationShellControllerProvider.notifier);
+
+    controller.showWidgetConfig(
+      ShellWidgetConfig(
+        ShellWidget.homeDashboard,
+        ConversationShellPreviewData.dataFor(ShellWidget.homeDashboard),
+      ),
+    );
+    controller.setLoading(true);
+
+    try {
+      await _conversationRepository.ensureDefaultConversation();
+
+      _messagesSubscription = await _conversationRepository.subscribeToMessages(
+        onMessages: (List<ConversationMessage> messages) {
+          if (!mounted) {
+            return;
+          }
+
+          if (messages.isEmpty) {
+            controller.replaceMessages(<ConversationMessage>[
+              ConversationMessage.luma(text: Strings.shellIntroMessage),
+            ]);
+            return;
+          }
+
+          controller.replaceMessages(messages);
+        },
+        onError: (_) {
+          if (!mounted) {
+            return;
+          }
+
+          controller.addLumaMessage(Strings.realtimeConnectionIssueMessage);
+        },
+      );
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Failed to initialize realtime conversation',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      controller.addLumaMessage(Strings.sendMessageFailedMessage);
+    } finally {
+      controller.setLoading(false);
+    }
+  }
+
+  Future<void> _handleSend() async {
     final String text = _composerController.text.trim();
     if (text.isEmpty) {
       return;
     }
 
-    ref.read(conversationShellControllerProvider.notifier).addUserMessage(text);
     _composerController.clear();
+
+    final ConversationShellController controller =
+        ref.read(conversationShellControllerProvider.notifier);
+    controller.setLoading(true);
+
+    try {
+      await _conversationRepository.sendUserMessageAndGenerateReply(text: text);
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Failed to send user message',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      controller.addLumaMessage(Strings.sendMessageFailedMessage);
+    } finally {
+      controller.setLoading(false);
+    }
   }
 
   Future<void> _showStatePicker() async {

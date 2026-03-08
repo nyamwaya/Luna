@@ -25,10 +25,10 @@ class Dimensions {
   static const double notificationHeight = 54.0;
   static const double composerHeight = 68.0;
   static const double pillButtonHeight = 64.0;
-  static const double actionTileHeight = 120.0;
+  static const double actionTileHeight = 132.0;
   static const double statusPillHeight = 32.0;
   static const double progressBarHeight = 6.0;
-  static const double homeSeatCardHeight = 164.0;
+  static const double homeSeatCardHeight = 212.0;
   static const double homeSeatCardWidth = 186.0;
   static const double homeSeatHeaderHeight = 66.0;
 

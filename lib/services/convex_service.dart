@@ -11,6 +11,9 @@ abstract final class ConvexService {
 
   static bool _isInitialized = false;
 
+  /// Whether the global Convex client has been initialized.
+  static bool get isInitialized => _isInitialized;
+
   /// Initializes Convex using deployment URL values from `.env`.
   ///
   /// Accepted environment keys (in priority order):
@@ -56,19 +59,32 @@ abstract final class ConvexService {
   static String? _readDeploymentUrl() {
     final String devUrl = dotenv.env[_envKeyConvexDevUrl] ?? '';
     if (devUrl.trim().isNotEmpty) {
-      return devUrl.trim();
+      return _normalizeEnvValue(devUrl);
     }
 
     final String deploymentUrl = dotenv.env[_envKeyConvexDeploymentUrl] ?? '';
     if (deploymentUrl.trim().isNotEmpty) {
-      return deploymentUrl.trim();
+      return _normalizeEnvValue(deploymentUrl);
     }
 
     final String convexUrl = dotenv.env[_envKeyConvexUrl] ?? '';
     if (convexUrl.trim().isNotEmpty) {
-      return convexUrl.trim();
+      return _normalizeEnvValue(convexUrl);
     }
 
     return null;
+  }
+
+  static String _normalizeEnvValue(String value) {
+    final String trimmed = value.trim();
+    if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return trimmed.substring(1, trimmed.length - 1);
+    }
+
+    if (trimmed.length >= 2 && trimmed.startsWith("'") && trimmed.endsWith("'")) {
+      return trimmed.substring(1, trimmed.length - 1);
+    }
+
+    return trimmed;
   }
 }
