@@ -39,6 +39,91 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     });
   }
 
+  List<ConversationMessage> _visibleMessagesForDisplay({
+    required List<ConversationMessage> allMessages,
+    required ShellWidget activeWidget,
+  }) {
+    if (activeWidget != ShellWidget.homeDashboard || allMessages.length <= 2) {
+      return allMessages;
+    }
+
+    final int lastUserIndex = allMessages.lastIndexWhere(
+      (ConversationMessage message) => message.author == ConversationAuthor.user,
+    );
+    if (lastUserIndex == -1) {
+      return <ConversationMessage>[allMessages.last];
+    }
+
+    return allMessages.sublist(lastUserIndex);
+  }
+
+  Widget _buildHistorySummaryCard({
+    required int collapsedMessageCount,
+    required List<ConversationMessage> allMessages,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: Dimensions.md, vertical: Dimensions.md),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(Dimensions.radiusMd),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              Strings.homeHistorySummaryLabel(collapsedMessageCount),
+              style: AppTextStyles.body.copyWith(color: AppColors.inkSoft),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _showHistoryDrawer(allMessages),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.gold,
+              textStyle: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w600),
+            ),
+            child: const Text(Strings.expandLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showHistoryDrawer(List<ConversationMessage> allMessages) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.shell,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Dimensions.md,
+              Dimensions.md,
+              Dimensions.md,
+              Dimensions.md,
+            ),
+            child: Column(
+              children: <Widget>[
+                Text(
+                  Strings.homeHistoryDrawerTitle,
+                  style: AppTextStyles.h3.copyWith(fontSize: 26),
+                ),
+                const SizedBox(height: Dimensions.md),
+                Expanded(
+                  child: ListView(
+                    children: allMessages.map(_buildMessage).toList(growable: false),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _messagesSubscription?.cancel();
@@ -53,6 +138,11 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
         ref.read(conversationShellControllerProvider.notifier);
     final ShellWidget activeWidget =
         state.activeWidget == ShellWidget.none ? ShellWidget.homeDashboard : state.activeWidget;
+    final List<ConversationMessage> visibleMessages = _visibleMessagesForDisplay(
+      allMessages: state.messages,
+      activeWidget: activeWidget,
+    );
+    final int collapsedMessageCount = state.messages.length - visibleMessages.length;
     final HomeDashboardView? homeView =
         activeWidget == ShellWidget.homeDashboard && state.widgetData.isNotEmpty
         ? HomeDashboardView.fromJson(state.widgetData)
@@ -60,10 +150,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
 
     final Widget? resolvedWidget = ConversationWidgetResolver.resolve(
       state: state.activeWidget == ShellWidget.none
-          ? state.copyWith(
-              activeWidget: activeWidget,
-              widgetData: ConversationShellPreviewData.dataFor(activeWidget),
-            )
+          ? state.copyWith(activeWidget: activeWidget)
           : state,
       onAcceptInvite: () => _activatePreview(ShellWidget.waitingForPairs),
       onDeclineInvite: () => controller.clearActiveWidget(),
@@ -84,8 +171,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
       },
       onSubmitFeedback: () {},
       onOpenHomeDinnerDetails: () {
-        controller.addLumaMessage(Strings.homeDinnerDetailsTapped);
-        _activatePreview(ShellWidget.confirmedDinner);
+        _sendMessageText('Show me my upcoming dinners.');
       },
       onRequestHomeSeat: (HomeOpenSeat seat) {
         controller.addLumaMessage(
@@ -93,13 +179,13 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
         );
       },
       onTapHomeFindDinner: () {
-        controller.addLumaMessage(Strings.homeFindDinnerTapped);
+        _sendMessageText('Show me open dinners nearby.');
       },
       onTapHomeMyCircles: () {
-        controller.addLumaMessage(Strings.homeMyCirclesTapped);
+        _sendMessageText('Show me my circles.');
       },
       onTapHomeStartCircle: () {
-        controller.addLumaMessage(Strings.homeStartCircleTapped);
+        _sendMessageText('Help me create a new circle.');
       },
       onTapHomeMyProfile: () {
         controller.addLumaMessage(Strings.homeMyProfileTapped);
@@ -144,8 +230,21 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
                       ),
                       const SizedBox(height: Dimensions.lg),
                     ],
-                    ...state.messages.map(_buildMessage),
-                    if (resolvedWidget != null) ...<Widget>[
+                    if (activeWidget == ShellWidget.homeDashboard && resolvedWidget != null) ...<Widget>[
+                      resolvedWidget,
+                      const SizedBox(height: Dimensions.lg),
+                    ],
+                    if (activeWidget == ShellWidget.homeDashboard && collapsedMessageCount > 0)
+                      ...<Widget>[
+                      _buildHistorySummaryCard(
+                        collapsedMessageCount: collapsedMessageCount,
+                        allMessages: state.messages,
+                      ),
+                      const SizedBox(height: Dimensions.lg),
+                    ],
+                    ...visibleMessages.map(_buildMessage),
+                    if (activeWidget != ShellWidget.homeDashboard && resolvedWidget != null)
+                      ...<Widget>[
                       const SizedBox(height: Dimensions.lg),
                       resolvedWidget,
                     ],
@@ -174,14 +273,25 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
   }
 
   Widget _buildTopChrome(ShellWidget widget, HomeDashboardView? homeView) {
-    if (widget == ShellWidget.homeDashboard && homeView != null) {
+    if (widget == ShellWidget.homeDashboard) {
+      final HomeDashboardView currentHomeView =
+          homeView ??
+          const HomeDashboardView(
+            city: Strings.homeCity,
+            userInitials: 'ME',
+            quickActionsPrompt: '',
+            openSeatsPrompt: '',
+            openSeats: <HomeOpenSeat>[],
+            activeCircleCount: 0,
+          );
+
       return Row(
         children: <Widget>[
           CircleAvatar(
             radius: Dimensions.avatarMd / 2,
             backgroundColor: AppColors.goldLight,
             child: Text(
-              homeView.userInitials,
+              currentHomeView.userInitials,
               style: AppTextStyles.bodySm.copyWith(
                 color: AppColors.ink,
                 fontWeight: FontWeight.w600,
@@ -192,14 +302,14 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Text(homeView.city, style: AppTextStyles.h3.copyWith(fontSize: 30)),
+                Text(currentHomeView.city, style: AppTextStyles.h3.copyWith(fontSize: 30)),
                 const SizedBox(width: Dimensions.xs),
                 const Icon(Icons.expand_more, color: AppColors.inkSoft),
               ],
             ),
           ),
           GestureDetector(
-            onTap: _showStatePicker,
+            onTap: _showShellActions,
             child: Container(
               width: 52,
               height: 52,
@@ -237,7 +347,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
           ),
         ),
         GestureDetector(
-          onTap: _showStatePicker,
+          onTap: _showShellActions,
           child: Container(
             width: 52,
             height: 52,
@@ -272,16 +382,23 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     final ConversationShellController controller =
         ref.read(conversationShellControllerProvider.notifier);
 
-    controller.showWidgetConfig(
-      ShellWidgetConfig(
-        ShellWidget.homeDashboard,
-        ConversationShellPreviewData.dataFor(ShellWidget.homeDashboard),
-      ),
-    );
+    await _messagesSubscription?.cancel();
+    _messagesSubscription = null;
+
+    controller.setActiveWidget(ShellWidget.homeDashboard, const <String, dynamic>{});
     controller.setLoading(true);
 
     try {
       await _conversationRepository.ensureDefaultConversation();
+      final HomeDashboardView? homeDashboard = await _conversationRepository.loadHomeDashboard();
+      if (homeDashboard != null) {
+        controller.showWidgetConfig(
+          ShellWidgetConfig(
+            ShellWidget.homeDashboard,
+            homeDashboard.toJson(),
+          ),
+        );
+      }
 
       _messagesSubscription = await _conversationRepository.subscribeToMessages(
         onMessages: (List<ConversationMessage> messages) {
@@ -318,6 +435,57 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     }
   }
 
+  Future<void> _resetConversation() async {
+    final ConversationShellController controller =
+        ref.read(conversationShellControllerProvider.notifier);
+    controller.setLoading(true);
+
+    try {
+      await _conversationRepository.resetConversation();
+      await _initializeRealtimeConversation();
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Failed to reset conversation',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      controller.addLumaMessage(Strings.conversationResetFailedMessage);
+      controller.setLoading(false);
+    }
+  }
+
+  Future<void> _showShellActions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.white,
+      builder: (BuildContext context) {
+        return ListView(
+          padding: const EdgeInsets.symmetric(vertical: Dimensions.md),
+          shrinkWrap: true,
+          children: <Widget>[
+            ListTile(
+              title: const Text(Strings.newConversationLabel, style: AppTextStyles.body),
+              onTap: () {
+                Navigator.of(context).pop();
+                _resetConversation();
+              },
+            ),
+            const Divider(height: 1, color: AppColors.cardBorder),
+            ...shellPreviewOptions.map(
+              (ShellPreviewOption option) => ListTile(
+                title: Text(option.label, style: AppTextStyles.body),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _activatePreview(option.widget);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _handleSend() async {
     final String text = _composerController.text.trim();
     if (text.isEmpty) {
@@ -326,12 +494,25 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
 
     _composerController.clear();
 
+    await _sendMessageText(text);
+  }
+
+  Future<void> _sendMessageText(String text) async {
+    final String normalizedText = text.trim();
+    if (normalizedText.isEmpty) {
+      return;
+    }
+
     final ConversationShellController controller =
         ref.read(conversationShellControllerProvider.notifier);
     controller.setLoading(true);
 
     try {
-      await _conversationRepository.sendUserMessageAndGenerateReply(text: text);
+      final List<ConversationMessage> latestMessages = await _conversationRepository
+          .sendUserMessageAndGenerateReply(text: normalizedText);
+      if (latestMessages.isNotEmpty) {
+        controller.replaceMessages(latestMessages);
+      }
     } catch (error, stackTrace) {
       AppLogger.error(
         'Failed to send user message',
@@ -371,7 +552,7 @@ class _ConversationShellState extends ConsumerState<ConversationShell> {
     return Padding(
       padding: const EdgeInsets.only(bottom: Dimensions.lg),
       child: switch (message.author) {
-        ConversationAuthor.luma => LumaMessage(text: message.text),
+        ConversationAuthor.luma => LumaMessage(text: message.text, metadata: message.metadata),
         ConversationAuthor.user => UserBubble(text: message.text),
       },
     );

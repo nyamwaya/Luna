@@ -5,6 +5,7 @@ import { v } from 'convex/values';
 export const ensureDefaultConversation = mutation({
   args: {
     conversationKey: v.string(),
+    userId: v.optional(v.string()),
     title: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -21,6 +22,7 @@ export const ensureDefaultConversation = mutation({
 
     if (existingConversation) {
       await ctx.db.patch(existingConversation._id, {
+        userId: args.userId,
         updatedAt: now,
       });
       console.log('messages:ensureDefaultConversation:existing', {
@@ -31,6 +33,7 @@ export const ensureDefaultConversation = mutation({
 
     await ctx.db.insert('conversations', {
       key: args.conversationKey,
+      userId: args.userId,
       title: args.title,
       createdAt: now,
       updatedAt: now,

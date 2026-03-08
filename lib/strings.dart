@@ -2,6 +2,8 @@ class Strings {
   static const String appTitle = 'Luma';
   static const String backLabel = 'Back';
   static const String expandLabel = 'Expand ›';
+  static const String newConversationLabel = 'New conversation';
+  static const String previewStatesLabel = 'Preview states';
   static const String headerHome = 'HOME';
   static const String shellIntroMessage =
       'I can walk you through every dinner pairing state from here.';
@@ -55,6 +57,17 @@ class Strings {
       'I hit a realtime sync issue. Try sending again in a moment.';
   static const String sendMessageFailedMessage =
       'I could not process that right now. Please try again.';
+  static const String conversationResetFailedMessage =
+      'I could not start a new conversation right now. Please try again.';
+  static const String assistantMyCirclesTitle = 'My circles';
+  static const String assistantDinnersTitle = 'Dinners';
+  static const String assistantCircleDetailTitle = 'Circle details';
+  static const String assistantNoCirclesMessage = 'No circles yet.';
+  static const String assistantNoDinnersMessage = 'Nothing scheduled yet.';
+  static const String assistantCircleFallbackName = 'Circle';
+  static const String assistantDinnerFallbackName = 'Dinner';
+  static const String assistantMemberFallbackName = 'Member';
+  static const String assistantInviteCodeLabel = 'Invite code';
 
   // Home dashboard
   static const String homePrimaryMessage =
@@ -97,6 +110,10 @@ class Strings {
       'Here are your confirmed dinner details.';
   static const String homeSeatRequested =
       'Nice pick. I\'ve marked your request for this open seat.';
+  static const String homeHistoryDrawerTitle = 'Earlier conversation';
+
+  static String homeHistorySummaryLabel(int count) =>
+      'Earlier · $count message${count == 1 ? '' : 's'} hidden';
 
   // Pairing flow
   static const String dinnerInviteTitle = 'You have a dinner invite.';

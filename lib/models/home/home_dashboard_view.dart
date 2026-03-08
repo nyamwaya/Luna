@@ -19,13 +19,13 @@ class HomeDashboardView {
       quickActionsPrompt: json['quick_actions_prompt'] as String? ?? '',
       openSeatsPrompt: json['open_seats_prompt'] as String? ?? '',
       openSeats: (json['open_seats'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<Map<String, dynamic>>()
-          .map(HomeOpenSeat.fromJson)
+          .whereType<Map>()
+          .map((Map<dynamic, dynamic> seat) => HomeOpenSeat.fromJson(Map<String, dynamic>.from(seat)))
           .toList(growable: false),
       activeCircleCount: json['active_circle_count'] as int? ?? 0,
-      confirmedDinner: json['confirmed_dinner'] is Map<String, dynamic>
+      confirmedDinner: json['confirmed_dinner'] is Map
           ? HomeConfirmedDinner.fromJson(
-              json['confirmed_dinner'] as Map<String, dynamic>,
+              Map<String, dynamic>.from(json['confirmed_dinner'] as Map),
             )
           : null,
     );

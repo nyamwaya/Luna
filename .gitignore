@@ -22,3 +22,9 @@ macos/Pods/
 .vscode/
 .env.local
 node_modules/
+
+# Convex generated files
+convex/_generated/
+
+# Lock files (optional - uncomment if you don't want to track lock files)
+# pubspec.lock

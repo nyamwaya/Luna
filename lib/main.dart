@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app_logger.dart';
+import 'services/app_identity_service.dart';
 import 'services/convex_service.dart';
 import 'router.dart';
 import 'styles/app_colors.dart';
@@ -24,6 +25,16 @@ Future<void> main() async {
   } catch (error, stackTrace) {
     AppLogger.error(
       'Convex initialization failed',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  try {
+    await AppIdentityService.initialize();
+  } catch (error, stackTrace) {
+    AppLogger.error(
+      'App identity initialization failed',
       error: error,
       stackTrace: stackTrace,
     );

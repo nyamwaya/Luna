@@ -44,6 +44,10 @@ abstract final class ConversationWidgetResolver {
       case ShellWidget.none:
         return null;
       case ShellWidget.homeDashboard:
+        if (state.widgetData.isEmpty) {
+          return null;
+        }
+
         return HomeDashboardCard(
           view: HomeDashboardView.fromJson(state.widgetData),
           onOpenConfirmedDinner: onOpenHomeDinnerDetails,
