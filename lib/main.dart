@@ -22,7 +22,6 @@ class LumaApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.gold,
           primary: AppColors.gold,
-          background: AppColors.white,
           surface: AppColors.white,
         ),
         scaffoldBackgroundColor: AppColors.white,
