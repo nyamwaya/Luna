@@ -39,3 +39,10 @@
 - Wired ConversationShell to Convex-backed ConversationRepository for live message subscription and send->LLM-reply flow
 - Updated ConversationMessage parsing for Convex payload shapes and added user-facing realtime failure strings
 - Verified with flutter analyze and convex function readiness (npx convex dev --once)
+
+[2026-03-08] Refined the shell into a home-first conversational canvas with cleaner realtime behavior.
+- Expanded the home dashboard data flow across Convex and Flutter to include circles and upcoming dinners, and rendered those sections directly in the shell home card
+- Changed ConversationShell startup to open in the home state, keep prior chat history out of the initial feed, and auto-scroll to the latest content when sending or receiving messages
+- Refactored shell layout into sticky translucent top and bottom chrome with a grey divider, a scrollable center canvas, and a separated composer/send control treatment
+- Simplified AppLogger output to plain non-ANSI lines and deduplicated noisy empty realtime subscription logs in ConversationRepository
+- Verified the slice with flutter analyze and convex codegen after the shell, home dashboard, and logging changes

@@ -587,58 +587,50 @@ class PairingComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.shell,
-      padding: const EdgeInsets.fromLTRB(
-        Dimensions.md,
-        Dimensions.sm,
-        Dimensions.md,
-        Dimensions.lg,
-      ),
-      child: SizedBox(
-        height: Dimensions.composerHeight,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.cream,
-            borderRadius: BorderRadius.circular(Dimensions.radiusFull),
-          ),
-          padding: const EdgeInsets.fromLTRB(Dimensions.lg, Dimensions.xs, Dimensions.xs, Dimensions.xs),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    hintText: placeholder,
-                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.inkFaint),
-                    contentPadding: const EdgeInsets.symmetric(vertical: Dimensions.sm),
-                  ),
-                  style: AppTextStyles.body,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => onSend(),
-                ),
+    return SizedBox(
+      height: Dimensions.composerHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.white.withValues(alpha: 0.86),
+                borderRadius: BorderRadius.circular(Dimensions.radiusFull),
+                border: Border.all(color: AppColors.cardBorder),
               ),
-              AspectRatio(
-                aspectRatio: 1,
-                child: GestureDetector(
-                  onTap: onSend,
-                  child: Container(
-                    margin: const EdgeInsets.all(Dimensions.xs),
-                    decoration: const BoxDecoration(
-                      color: AppColors.dark,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.arrow_upward_rounded, color: AppColors.white, size: 20),
-                  ),
+              padding: const EdgeInsets.symmetric(horizontal: Dimensions.lg),
+              child: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  hintText: placeholder,
+                  hintStyle: AppTextStyles.body.copyWith(color: AppColors.inkFaint),
+                  contentPadding: const EdgeInsets.symmetric(vertical: Dimensions.md),
                 ),
+                style: AppTextStyles.body,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
               ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: Dimensions.sm),
+          GestureDetector(
+            onTap: onSend,
+            child: Container(
+              width: Dimensions.composerHeight,
+              height: Dimensions.composerHeight,
+              decoration: BoxDecoration(
+                color: AppColors.dark,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.dark),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.arrow_upward_rounded, color: AppColors.white, size: 20),
+            ),
+          ),
+        ],
       ),
     );
   }

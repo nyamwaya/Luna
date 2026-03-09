@@ -2,7 +2,12 @@ import 'package:logger/logger.dart';
 
 /// Centralized application logging wrapper.
 abstract final class AppLogger {
-  static final Logger _logger = Logger();
+  static final Logger _logger = Logger(
+    printer: SimplePrinter(
+      colors: false,
+      printTime: false,
+    ),
+  );
 
   /// Writes an informational log message.
   static void info(String message, {Map<String, Object?>? data}) {

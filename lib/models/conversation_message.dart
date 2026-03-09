@@ -29,12 +29,14 @@ class ConversationMessage {
     required this.text,
     required this.author,
     required this.createdAt,
+    this.isHidden = false,
     this.metadata = const {},
   });
 
   /// Creates a Luma-authored message.
   factory ConversationMessage.luma({
     required String text,
+    bool isHidden = false,
     Map<String, dynamic> metadata = const {},
   }) {
     return ConversationMessage(
@@ -42,6 +44,7 @@ class ConversationMessage {
       text: text,
       author: ConversationAuthor.luma,
       createdAt: DateTime.now(),
+      isHidden: isHidden,
       metadata: metadata,
     );
   }
@@ -49,6 +52,7 @@ class ConversationMessage {
   /// Creates a user-authored message.
   factory ConversationMessage.user({
     required String text,
+    bool isHidden = false,
     Map<String, dynamic> metadata = const {},
   }) {
     return ConversationMessage(
@@ -56,6 +60,7 @@ class ConversationMessage {
       text: text,
       author: ConversationAuthor.user,
       createdAt: DateTime.now(),
+      isHidden: isHidden,
       metadata: metadata,
     );
   }
@@ -73,6 +78,8 @@ class ConversationMessage {
         json['author'] as String? ?? ConversationAuthor.luma.value,
       ),
       createdAt: _parseDateTime(rawCreatedAt) ?? DateTime.now(),
+      isHidden: json['is_hidden'] == true
+          || ((json['metadata'] as Map?)?['isHidden'] == true),
       metadata: Map<String, dynamic>.from(
         (json['metadata'] as Map?) ?? const <String, dynamic>{},
       ),
@@ -91,6 +98,9 @@ class ConversationMessage {
   /// The timestamp the message was created.
   final DateTime createdAt;
 
+  /// Whether this message should be kept in history but not rendered.
+  final bool isHidden;
+
   /// Additional structured payload for the message.
   final Map<String, dynamic> metadata;
 
@@ -101,6 +111,7 @@ class ConversationMessage {
       'text': text,
       'author': author.value,
       'created_at': createdAt.toIso8601String(),
+      'is_hidden': isHidden,
       'metadata': metadata,
     };
   }
@@ -111,6 +122,7 @@ class ConversationMessage {
     String? text,
     ConversationAuthor? author,
     DateTime? createdAt,
+    bool? isHidden,
     Map<String, dynamic>? metadata,
   }) {
     return ConversationMessage(
@@ -118,6 +130,7 @@ class ConversationMessage {
       text: text ?? this.text,
       author: author ?? this.author,
       createdAt: createdAt ?? this.createdAt,
+      isHidden: isHidden ?? this.isHidden,
       metadata: metadata ?? this.metadata,
     );
   }

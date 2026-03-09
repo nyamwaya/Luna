@@ -130,3 +130,79 @@ export const sendAssistantMessage = mutation({
     });
   },
 });
+
+export const upsertAssistantActivityMessage = mutation({
+  args: {
+    conversationKey: v.string(),
+    text: v.string(),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const existingActivityMessage = await findAssistantActivityMessage(
+      ctx,
+      args.conversationKey,
+      (args.metadata as { statusKey?: string } | undefined)?.statusKey,
+    );
+
+    if (existingActivityMessage) {
+      await ctx.db.patch(existingActivityMessage._id, {
+        text: args.text,
+        metadata: args.metadata,
+        createdAt: Date.now(),
+      });
+      return { messageId: existingActivityMessage._id };
+    }
+
+    const messageId = await ctx.db.insert('messages', {
+      conversationKey: args.conversationKey,
+      author: 'luma',
+      text: args.text,
+      metadata: args.metadata,
+      createdAt: Date.now(),
+    });
+
+    return { messageId };
+  },
+});
+
+export const clearAssistantActivityMessage = mutation({
+  args: {
+    conversationKey: v.string(),
+    statusKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existingActivityMessage = await findAssistantActivityMessage(
+      ctx,
+      args.conversationKey,
+      args.statusKey,
+    );
+    if (!existingActivityMessage) {
+      return { cleared: false };
+    }
+
+    await ctx.db.delete(existingActivityMessage._id);
+    return { cleared: true };
+  },
+});
+
+async function findAssistantActivityMessage(
+  ctx: any,
+  conversationKey: string,
+  statusKey: string | undefined,
+) {
+  const messages = await ctx.db
+    .query('messages')
+    .withIndex('by_conversation_created_at', (q: any) =>
+      q.eq('conversationKey', conversationKey),
+    )
+    .collect();
+
+  return messages.find((message: any) => {
+    if (message.author !== 'luma') {
+      return false;
+    }
+
+    const metadata = message.metadata as { activity?: unknown; statusKey?: unknown } | undefined;
+    return metadata?.activity == true && metadata?.statusKey === statusKey;
+  });
+}

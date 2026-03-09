@@ -8,6 +8,8 @@ class HomeDashboardView {
     required this.openSeatsPrompt,
     required this.openSeats,
     required this.activeCircleCount,
+    required this.circles,
+    required this.upcomingDinners,
     this.confirmedDinner,
   });
 
@@ -23,6 +25,14 @@ class HomeDashboardView {
           .map((Map<dynamic, dynamic> seat) => HomeOpenSeat.fromJson(Map<String, dynamic>.from(seat)))
           .toList(growable: false),
       activeCircleCount: json['active_circle_count'] as int? ?? 0,
+      circles: (json['circles'] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<Map>()
+          .map((Map<dynamic, dynamic> circle) => HomeCircleSummary.fromJson(Map<String, dynamic>.from(circle)))
+          .toList(growable: false),
+      upcomingDinners: (json['upcoming_dinners'] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<Map>()
+          .map((Map<dynamic, dynamic> dinner) => HomeUpcomingDinner.fromJson(Map<String, dynamic>.from(dinner)))
+          .toList(growable: false),
       confirmedDinner: json['confirmed_dinner'] is Map
           ? HomeConfirmedDinner.fromJson(
               Map<String, dynamic>.from(json['confirmed_dinner'] as Map),
@@ -49,6 +59,10 @@ class HomeDashboardView {
   /// Number of circles the user is in.
   final int activeCircleCount;
 
+  final List<HomeCircleSummary> circles;
+
+  final List<HomeUpcomingDinner> upcomingDinners;
+
   /// The next confirmed dinner summary if available.
   final HomeConfirmedDinner? confirmedDinner;
 
@@ -61,6 +75,10 @@ class HomeDashboardView {
       'open_seats_prompt': openSeatsPrompt,
       'open_seats': openSeats.map((HomeOpenSeat seat) => seat.toJson()).toList(growable: false),
       'active_circle_count': activeCircleCount,
+      'circles': circles.map((HomeCircleSummary circle) => circle.toJson()).toList(growable: false),
+      'upcoming_dinners': upcomingDinners
+          .map((HomeUpcomingDinner dinner) => dinner.toJson())
+          .toList(growable: false),
       'confirmed_dinner': confirmedDinner?.toJson(),
     };
   }
@@ -73,6 +91,8 @@ class HomeDashboardView {
     String? openSeatsPrompt,
     List<HomeOpenSeat>? openSeats,
     int? activeCircleCount,
+    List<HomeCircleSummary>? circles,
+    List<HomeUpcomingDinner>? upcomingDinners,
     HomeConfirmedDinner? confirmedDinner,
   }) {
     return HomeDashboardView(
@@ -82,6 +102,8 @@ class HomeDashboardView {
       openSeatsPrompt: openSeatsPrompt ?? this.openSeatsPrompt,
       openSeats: openSeats ?? this.openSeats,
       activeCircleCount: activeCircleCount ?? this.activeCircleCount,
+      circles: circles ?? this.circles,
+      upcomingDinners: upcomingDinners ?? this.upcomingDinners,
       confirmedDinner: confirmedDinner ?? this.confirmedDinner,
     );
   }
@@ -216,5 +238,105 @@ class HomeOpenSeat {
       seatsLeft: seatsLeft ?? this.seatsLeft,
       isHot: isHot ?? this.isHot,
     );
+  }
+}
+
+class HomeCircleSummary {
+  const HomeCircleSummary({
+    required this.id,
+    required this.name,
+    required this.city,
+    required this.vibe,
+    required this.memberCount,
+    required this.pairingFrequency,
+    required this.inviteCode,
+    required this.nextPairingLabel,
+  });
+
+  factory HomeCircleSummary.fromJson(Map<String, dynamic> json) {
+    return HomeCircleSummary(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      vibe: json['vibe'] as String? ?? '',
+      memberCount: json['member_count'] as int? ?? 0,
+      pairingFrequency: json['pairing_frequency'] as String? ?? '',
+      inviteCode: json['invite_code'] as String? ?? '',
+      nextPairingLabel: json['next_pairing_label'] as String? ?? '',
+    );
+  }
+
+  final String id;
+  final String name;
+  final String city;
+  final String vibe;
+  final int memberCount;
+  final String pairingFrequency;
+  final String inviteCode;
+  final String nextPairingLabel;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'city': city,
+      'vibe': vibe,
+      'member_count': memberCount,
+      'pairing_frequency': pairingFrequency,
+      'invite_code': inviteCode,
+      'next_pairing_label': nextPairingLabel,
+    };
+  }
+}
+
+class HomeUpcomingDinner {
+  const HomeUpcomingDinner({
+    required this.id,
+    required this.title,
+    required this.circleName,
+    required this.venue,
+    required this.city,
+    required this.dateLabel,
+    required this.timeLabel,
+    required this.status,
+    required this.seatsLeft,
+  });
+
+  factory HomeUpcomingDinner.fromJson(Map<String, dynamic> json) {
+    return HomeUpcomingDinner(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      circleName: json['circle_name'] as String? ?? '',
+      venue: json['venue'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      dateLabel: json['date_label'] as String? ?? '',
+      timeLabel: json['time_label'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      seatsLeft: json['seats_left'] as int? ?? 0,
+    );
+  }
+
+  final String id;
+  final String title;
+  final String circleName;
+  final String venue;
+  final String city;
+  final String dateLabel;
+  final String timeLabel;
+  final String status;
+  final int seatsLeft;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'title': title,
+      'circle_name': circleName,
+      'venue': venue,
+      'city': city,
+      'date_label': dateLabel,
+      'time_label': timeLabel,
+      'status': status,
+      'seats_left': seatsLeft,
+    };
   }
 }

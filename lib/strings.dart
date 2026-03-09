@@ -62,6 +62,7 @@ class Strings {
   static const String assistantMyCirclesTitle = 'My circles';
   static const String assistantDinnersTitle = 'Dinners';
   static const String assistantCircleDetailTitle = 'Circle details';
+  static const String assistantSuggestionsTitle = 'Choose an option';
   static const String assistantNoCirclesMessage = 'No circles yet.';
   static const String assistantNoDinnersMessage = 'Nothing scheduled yet.';
   static const String assistantCircleFallbackName = 'Circle';
@@ -73,6 +74,10 @@ class Strings {
   static const String homePrimaryMessage =
       'This is your home dashboard. I will keep it updated with your dinners, circles, and next actions.';
   static const String homeCity = 'Minneapolis';
+  static const String homeUpcomingDinnersTitle = 'Upcoming dinners';
+  static const String homeCirclesTitle = 'Your circles';
+  static const String homeNoUpcomingDinners = 'No upcoming dinners yet.';
+  static const String homeNoCircles = 'No circles yet.';
   static const String homeOpenSeatsPrompt =
       '4 dinners near you still have open seats this week.';
   static const String homeQuickActionsPrompt = 'What do you want to do?';

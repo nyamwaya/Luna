@@ -54,28 +54,62 @@ class HomeDashboardCard extends StatelessWidget {
           ),
           const SizedBox(height: Dimensions.md),
         ],
+        _SectionCard(
+          title: Strings.homeUpcomingDinnersTitle,
+          child: view.upcomingDinners.isEmpty
+              ? const _EmptySectionState(label: Strings.homeNoUpcomingDinners)
+              : Column(
+                  children: view.upcomingDinners
+                      .map(
+                        (HomeUpcomingDinner dinner) => Padding(
+                          padding: const EdgeInsets.only(bottom: Dimensions.sm),
+                          child: _UpcomingDinnerRow(dinner: dinner),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+        ),
+        const SizedBox(height: Dimensions.md),
+        _SectionCard(
+          title: Strings.homeCirclesTitle,
+          child: view.circles.isEmpty
+              ? const _EmptySectionState(label: Strings.homeNoCircles)
+              : Column(
+                  children: view.circles
+                      .map(
+                        (HomeCircleSummary circle) => Padding(
+                          padding: const EdgeInsets.only(bottom: Dimensions.sm),
+                          child: _CircleSummaryRow(circle: circle),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+        ),
+        const SizedBox(height: Dimensions.md),
         PairingInlineBanner(
           text: view.openSeatsPrompt,
           backgroundColor: AppColors.white,
           borderColor: AppColors.cardBorder,
           foregroundColor: AppColors.ink,
         ),
-        const SizedBox(height: Dimensions.md),
-        SizedBox(
-          height: Dimensions.homeSeatCardHeight,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: view.openSeats.length,
-            separatorBuilder: (_, __) => const SizedBox(width: Dimensions.sm),
-            itemBuilder: (BuildContext context, int index) {
-              final HomeOpenSeat seat = view.openSeats[index];
-              return _OpenSeatCard(
-                seat: seat,
-                onRequestSeat: () => onRequestSeat(seat),
-              );
-            },
+        if (view.openSeats.isNotEmpty) ...<Widget>[
+          const SizedBox(height: Dimensions.md),
+          SizedBox(
+            height: Dimensions.homeSeatCardHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: view.openSeats.length,
+              separatorBuilder: (_, __) => const SizedBox(width: Dimensions.sm),
+              itemBuilder: (BuildContext context, int index) {
+                final HomeOpenSeat seat = view.openSeats[index];
+                return _OpenSeatCard(
+                  seat: seat,
+                  onRequestSeat: () => onRequestSeat(seat),
+                );
+              },
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: Dimensions.md),
         PairingInlineBanner(
           text: view.quickActionsPrompt,
@@ -119,6 +153,142 @@ class HomeDashboardCard extends StatelessWidget {
               onTap: onTapMyProfile,
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: Dimensions.cardPadding,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(Dimensions.radiusLg),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(title, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: Dimensions.sm),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptySectionState extends StatelessWidget {
+  const _EmptySectionState({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: AppTextStyles.body.copyWith(color: AppColors.inkSoft),
+    );
+  }
+}
+
+class _UpcomingDinnerRow extends StatelessWidget {
+  const _UpcomingDinnerRow({required this.dinner});
+
+  final HomeUpcomingDinner dinner;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 10,
+          height: 10,
+          margin: const EdgeInsets.only(top: 6),
+          decoration: const BoxDecoration(
+            color: AppColors.gold,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: Dimensions.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                dinner.title,
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: Dimensions.xs),
+              Text(
+                '${dinner.circleName} · ${dinner.dateLabel} · ${dinner.timeLabel}',
+                style: AppTextStyles.bodySm.copyWith(color: AppColors.inkSoft),
+              ),
+              const SizedBox(height: Dimensions.xs),
+              Text(
+                '${dinner.venue} · ${dinner.city}',
+                style: AppTextStyles.bodySm.copyWith(color: AppColors.inkSoft),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleSummaryRow extends StatelessWidget {
+  const _CircleSummaryRow({required this.circle});
+
+  final HomeCircleSummary circle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                circle.name,
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: Dimensions.xs),
+              Text(
+                '${circle.city} · ${circle.memberCount} members · ${circle.pairingFrequency}',
+                style: AppTextStyles.bodySm.copyWith(color: AppColors.inkSoft),
+              ),
+              const SizedBox(height: Dimensions.xs),
+              Text(
+                circle.nextPairingLabel,
+                style: AppTextStyles.bodySm.copyWith(color: AppColors.inkSoft),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: Dimensions.sm),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: Dimensions.sm, vertical: Dimensions.xs),
+          decoration: BoxDecoration(
+            color: AppColors.goldLight,
+            borderRadius: BorderRadius.circular(Dimensions.radiusFull),
+          ),
+          child: Text(
+            circle.inviteCode,
+            style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );

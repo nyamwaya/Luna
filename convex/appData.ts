@@ -39,6 +39,41 @@ export const getMyCircles = query({
   },
 });
 
+export const getColdStartSnapshot = query({
+  args: {
+    userId: v.string(),
+    userContext: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const scope = await resolveViewerScope(ctx, args.userId, args.userContext);
+    const circles = await loadCircleSummaries(ctx, scope);
+    const upcomingDinners = (await loadUpcomingDinnerSummaries(ctx, scope)).filter(
+      (dinner: DinnerSummary) => dinner.status === 'confirmed',
+    );
+    const pendingInvites = await loadPendingInviteSummaries(ctx, scope);
+    const openDinnersNearby = await loadOpenDinnerSummaries(ctx, scope.city);
+    const createdAt = typeof scope.user?.createdAt === 'number' ? scope.user.createdAt : Date.now();
+
+    return {
+      success: true,
+      dataMode: scope.isDemoFallback ? 'demo' : 'user',
+      snapshot: {
+        user: {
+          id: `${scope.user?._id ?? args.userId}`,
+          firstName: scope.user?.firstName ?? 'Friend',
+          city: scope.city,
+          hasJoinedCircle: Boolean(scope.user?.hasJoinedCircle),
+          daysSinceCreated: Math.max(0, Math.floor((Date.now() - createdAt) / dayMs)),
+        },
+        circles,
+        upcomingDinners,
+        pendingInvites,
+        openDinnersNearby,
+      },
+    };
+  },
+});
+
 export const getHomeDashboard = query({
   args: {
     userId: v.string(),
@@ -48,6 +83,7 @@ export const getHomeDashboard = query({
     const scope = await resolveViewerScope(ctx, args.userId, args.userContext);
     const circles = await loadCircleSummaries(ctx, scope);
     const openDinners = await loadOpenDinnerSummaries(ctx, scope.city);
+    const upcomingDinners = await loadUpcomingDinnerSummaries(ctx, scope);
     const confirmedDinner = await loadNextConfirmedDinnerSummary(ctx, scope);
 
     return {
@@ -68,6 +104,27 @@ export const getHomeDashboard = query({
           is_hot: dinner.seatsLeft <= 2,
         })),
         active_circle_count: circles.length,
+        circles: circles.map((circle) => ({
+          id: circle.id,
+          name: circle.name,
+          city: circle.city,
+          vibe: circle.vibe,
+          member_count: circle.memberCount,
+          pairing_frequency: circle.pairingFrequency,
+          invite_code: circle.inviteCode,
+          next_pairing_label: circle.nextPairingLabel,
+        })),
+        upcoming_dinners: upcomingDinners.map((dinner) => ({
+          id: dinner.id,
+          title: dinner.title,
+          circle_name: dinner.circleName,
+          venue: dinner.venue,
+          city: dinner.city,
+          date_label: dinner.dateLabel,
+          time_label: dinner.timeLabel,
+          status: dinner.status,
+          seats_left: dinner.seatsLeft,
+        })),
         confirmed_dinner: confirmedDinner
           ? {
               badge: `${confirmedDinner.circleName.toUpperCase()} · ✓ CONFIRMED`,
@@ -143,20 +200,30 @@ export const createCircle = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const name = requiredNonEmpty(args.name);
+    const vibe = requiredNonEmpty(args.vibe);
+    const city = requiredNonEmpty(args.city);
+    if (!name || !vibe || !city) {
+      return {
+        success: false,
+        error: 'Circle name, vibe, and city are all required before creating a circle.',
+      };
+    }
+
     const localUser = await ensureLocalUserRecord(ctx, args.userId, args.userContext);
-    const inviteCode = buildInviteCode(args.name);
+    const inviteCode = buildInviteCode(name);
     const now = Date.now();
     const circleId = await ctx.db.insert('circles', {
       ownerUserId: args.userId,
-      name: args.name,
-      vibe: args.vibe,
-      city: args.city,
+      name,
+      vibe,
+      city,
       visibility: args.visibility,
       pairingFrequency: args.pairingFrequency,
       maxDinnerSize: 8,
       adminUserId: localUser._id,
       inviteCode,
-      hashtags: buildHashtags(args.name, args.vibe),
+      hashtags: buildHashtags(name, vibe),
       createdAt: now,
       updatedAt: now,
     });
@@ -178,9 +245,9 @@ export const createCircle = mutation({
       success: true,
       circle: {
         id: circleId,
-        name: args.name,
-        city: args.city,
-        vibe: args.vibe,
+        name,
+        city,
+        vibe,
         memberCount: 1,
         pairingFrequency: args.pairingFrequency,
         visibility: args.visibility,
@@ -213,6 +280,7 @@ export const ensureLocalUser = mutation({
 type PairingFrequency = 'weekly' | 'biweekly' | 'monthly';
 type CircleVisibility = 'public' | 'private';
 type DinnerStatus = 'draft' | 'open' | 'paired' | 'confirmed' | 'completed' | 'cancelled';
+const dayMs = 24 * 60 * 60 * 1000;
 
 type ViewerScope = {
   effectiveUserId: string;
@@ -369,6 +437,38 @@ async function loadOpenDinnerSummaries(
     );
 }
 
+async function loadPendingInviteSummaries(
+  ctx: any,
+  scope: ViewerScope,
+): Promise<DinnerSummary[]> {
+  if (!scope.user) {
+    return [];
+  }
+
+  const attendees = await ctx.db
+    .query('dinnerAttendees')
+    .withIndex('by_user', (q: any) => q.eq('userId', scope.user._id))
+    .collect();
+  const dinners = (
+    await Promise.all(
+      attendees
+        .filter((attendee: any) => attendee.status === 'invited')
+        .map(async (attendee: any) => await ctx.db.get(attendee.dinnerEventId)),
+    )
+  )
+    .filter(isDefined)
+    .filter((dinner: any) => isUpcomingDinner(dinner))
+    .sort(compareByScheduledDate);
+  const summaries = await Promise.all(
+    dinners.map(async (dinner: any) => {
+      const circle = await ctx.db.get(dinner.circleId);
+      return circle ? mapDinnerSummary(dinner, circle) : null;
+    }),
+  );
+
+  return summaries.filter(isDefined);
+}
+
 async function loadNextConfirmedDinnerSummary(
   ctx: any,
   scope: ViewerScope,
@@ -470,9 +570,9 @@ async function buildCircleSummary(
 
   return {
     id: `${circle._id}`,
-    name: circle.name,
-    city: circle.city,
-    vibe: circle.vibe,
+    name: optionalString(circle.name) ?? optionalString(circle.inviteCode) ?? 'Circle',
+    city: optionalString(circle.city) ?? '',
+    vibe: optionalString(circle.vibe) ?? '',
     memberCount: Math.max(memberships.length, 1),
     pairingFrequency: circle.pairingFrequency,
     visibility: circle.visibility,
@@ -603,6 +703,11 @@ function isDefined<T>(value: T | null | undefined): value is T {
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
+}
+
+function requiredNonEmpty(value: string): string | null {
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function buildInviteCode(name: string): string {

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/conversation_message.dart';
-import '../../strings.dart';
 
 /// Identifies the active contextual widget rendered in the shell.
 enum ShellWidget {
@@ -63,16 +62,7 @@ class ShellState {
 
   /// Creates the default shell state.
   factory ShellState.initial() {
-    return ShellState(
-      messages: <ConversationMessage>[
-        ConversationMessage(
-          id: 'seed-luma-message',
-          text: Strings.shellIntroMessage,
-          author: ConversationAuthor.luma,
-          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-        ),
-      ],
-    );
+    return const ShellState();
   }
 
   /// The conversation feed messages.
